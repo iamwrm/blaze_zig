@@ -51,7 +51,7 @@ jobs:
 
       - name: Run Zig Benchmark
         run: |
-          echo "## Zig Benchmark (Pure Zig)" >> $GITHUB_STEP_SUMMARY
+          echo "## Zig Benchmark (Zig + MKL)" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
           pixi run benchmark-zig | tee -a $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
