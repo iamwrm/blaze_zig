@@ -56,6 +56,18 @@ jobs:
           pixi run benchmark-zig | tee -a $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
 
+      - name: Setup glibc symlinks for conda-forge BLAS
+        run: |
+          # Create symlinks for lib64 compatibility
+          # Conda-forge libraries expect RHEL-style paths, Ubuntu uses /lib/x86_64-linux-gnu
+          sudo mkdir -p /lib64 /usr/lib64
+          sudo ln -sf /lib/x86_64-linux-gnu/libm.so.6 /lib64/libm.so.6
+          sudo ln -sf /lib/x86_64-linux-gnu/libc.so.6 /lib64/libc.so.6
+          sudo ln -sf /lib/x86_64-linux-gnu/libpthread.so.0 /lib64/libpthread.so.0
+          sudo ln -sf /lib/x86_64-linux-gnu/libdl.so.2 /lib64/libdl.so.2
+          sudo ln -sf /lib/x86_64-linux-gnu/librt.so.1 /lib64/librt.so.1
+          sudo ln -sf /usr/lib/x86_64-linux-gnu/libgfortran.so.5 /usr/lib64/libgfortran.so.5 2>/dev/null || true
+
       - name: Build Zig with OpenBLAS
         run: pixi run build-zig-openblas
 
