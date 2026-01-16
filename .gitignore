@@ -1,7 +1,6 @@
 # Pixi environments
 .pixi/*
 !.pixi/config.toml
-pixi.lock
 
 # Build artifacts
 build/
