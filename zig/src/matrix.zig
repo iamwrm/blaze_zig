@@ -2,6 +2,10 @@
 
 const std = @import("std");
 const Allocator = std.mem.Allocator;
+const cblas = @import("cblas.zig");
+
+/// Check if BLAS is available at link time
+pub const use_blas = @hasDecl(cblas, "dgemm");
 
 /// A dynamically-sized, row-major matrix
 pub fn DynamicMatrix(comptime T: type) type {
@@ -78,7 +82,7 @@ pub fn DynamicMatrix(comptime T: type) type {
         }
 
         /// Matrix multiplication: C = A * B
-        /// Uses naive O(n^3) algorithm optimized for cache locality
+        /// Uses BLAS (MKL/OpenBLAS) when available, otherwise falls back to tiled algorithm
         pub fn multiply(allocator: Allocator, a: Self, b: Self) !Self {
             if (a.cols_count != b.rows_count) {
                 return error.DimensionMismatch;
@@ -86,7 +90,26 @@ pub fn DynamicMatrix(comptime T: type) type {
 
             var result = try init(allocator, a.rows_count, b.cols_count);
 
-            // Cache-friendly loop ordering with tiling
+            const m = a.rows_count;
+            const n = b.cols_count;
+            const k = a.cols_count;
+
+            if (T == f64) {
+                // Use BLAS dgemm for double precision
+                cblas.dgemm(m, n, k, a.data, b.data, result.data);
+            } else if (T == f32) {
+                // Use BLAS sgemm for single precision
+                cblas.sgemm(m, n, k, a.data, b.data, result.data);
+            } else {
+                // Fallback to pure Zig implementation for other types
+                multiplyPureZig(&result, a, b);
+            }
+
+            return result;
+        }
+
+        /// Pure Zig matrix multiplication (fallback when BLAS not available or for non-float types)
+        fn multiplyPureZig(result: *Self, a: Self, b: Self) void {
             const tile_size: usize = 32;
             const m = a.rows_count;
             const n = b.cols_count;
@@ -115,8 +138,6 @@ pub fn DynamicMatrix(comptime T: type) type {
                     }
                 }
             }
-
-            return result;
         }
 
         /// Element-wise addition: C = A + B
