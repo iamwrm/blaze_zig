@@ -49,15 +49,18 @@ pub fn build(b: *std.Build) void {
             // Add include path for MKL headers
             exe.addIncludePath(.{ .cwd_relative = include_path });
 
-            // Add library search path and rpath
+            // Add conda environment library search path and rpath
             exe.addLibraryPath(.{ .cwd_relative = lib_path });
             exe.addRPath(.{ .cwd_relative = lib_path });
 
-            // Link MKL libraries (sequential mode for deterministic results)
-            // Using the layered linking approach: interface + threading + core
-            exe.linkSystemLibrary("mkl_intel_lp64"); // Interface layer (LP64 = 32-bit int)
-            exe.linkSystemLibrary("mkl_sequential"); // Threading layer (sequential)
-            exe.linkSystemLibrary("mkl_core"); // Core library
+            // Add system library paths for Ubuntu (GitHub Actions)
+            // This is needed because MKL libraries are linked against system glibc
+            exe.addLibraryPath(.{ .cwd_relative = "/lib/x86_64-linux-gnu" });
+            exe.addLibraryPath(.{ .cwd_relative = "/usr/lib/x86_64-linux-gnu" });
+
+            // Use MKL Single Dynamic Library (SDL) for simpler linking
+            // mkl_rt automatically loads the appropriate interface, threading, and core libraries
+            exe.linkSystemLibrary("mkl_rt");
 
             // Link libc which provides pthread, m, dl automatically
             exe.linkLibC();
