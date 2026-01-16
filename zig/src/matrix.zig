@@ -2,10 +2,11 @@
 
 const std = @import("std");
 const Allocator = std.mem.Allocator;
-const cblas = @import("cblas.zig");
+const build_options = @import("build_options");
+const cblas = if (build_options.use_mkl) @import("cblas.zig") else struct {};
 
-/// Check if BLAS is available at link time
-pub const use_blas = @hasDecl(cblas, "dgemm");
+/// Check if MKL/BLAS is enabled
+pub const use_mkl = build_options.use_mkl;
 
 /// A dynamically-sized, row-major matrix
 pub fn DynamicMatrix(comptime T: type) type {
@@ -82,7 +83,7 @@ pub fn DynamicMatrix(comptime T: type) type {
         }
 
         /// Matrix multiplication: C = A * B
-        /// Uses BLAS (MKL/OpenBLAS) when available, otherwise falls back to tiled algorithm
+        /// Uses BLAS (MKL/OpenBLAS) when enabled, otherwise uses tiled algorithm
         pub fn multiply(allocator: Allocator, a: Self, b: Self) !Self {
             if (a.cols_count != b.rows_count) {
                 return error.DimensionMismatch;
@@ -94,14 +95,15 @@ pub fn DynamicMatrix(comptime T: type) type {
             const n = b.cols_count;
             const k = a.cols_count;
 
-            if (T == f64) {
-                // Use BLAS dgemm for double precision
-                cblas.dgemm(m, n, k, a.data, b.data, result.data);
-            } else if (T == f32) {
-                // Use BLAS sgemm for single precision
-                cblas.sgemm(m, n, k, a.data, b.data, result.data);
+            if (build_options.use_mkl and (T == f64 or T == f32)) {
+                // Use BLAS for float types when MKL is enabled
+                if (T == f64) {
+                    cblas.dgemm(m, n, k, a.data, b.data, result.data);
+                } else {
+                    cblas.sgemm(m, n, k, a.data, b.data, result.data);
+                }
             } else {
-                // Fallback to pure Zig implementation for other types
+                // Pure Zig implementation
                 multiplyPureZig(&result, a, b);
             }
 
