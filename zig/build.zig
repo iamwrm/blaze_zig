@@ -49,6 +49,7 @@ pub fn build(b: *std.Build) void {
             const lib_path = std.fmt.allocPrint(b.allocator, "{s}/lib", .{prefix}) catch unreachable;
             example_exe.root_module.addLibraryPath(.{ .cwd_relative = lib_path });
             example_exe.root_module.linkSystemLibrary("mkl_rt", .{});
+            example_exe.addRPath(.{ .cwd_relative = lib_path });
         }
     }
     b.installArtifact(example_exe);
@@ -77,6 +78,7 @@ pub fn build(b: *std.Build) void {
             const lib_path = std.fmt.allocPrint(b.allocator, "{s}/lib", .{prefix}) catch unreachable;
             benchmark_exe.root_module.addLibraryPath(.{ .cwd_relative = lib_path });
             benchmark_exe.root_module.linkSystemLibrary("mkl_rt", .{});
+            benchmark_exe.addRPath(.{ .cwd_relative = lib_path });
         }
     }
     b.installArtifact(benchmark_exe);
