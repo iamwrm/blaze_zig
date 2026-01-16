@@ -72,9 +72,8 @@ pub fn DynamicMatrix(comptime T: type) type {
         /// Fill matrix with random values between 0 and 1
         pub fn fillRandom(self: *Self, seed: u64) void {
             var rng = std.Random.DefaultPrng.init(seed);
-            const random = rng.random();
             for (self.data) |*val| {
-                val.* = random.float(T);
+                val.* = rng.random().float(T);
             }
         }
 

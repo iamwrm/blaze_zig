@@ -29,12 +29,12 @@ fn benchmarkMatmul(allocator: std.mem.Allocator, n: usize, warmup_runs: u32, tim
 
     // Timed runs
     var total_time_ns: u64 = 0;
-    var timer = try std.time.Timer.start();
 
     for (0..timed_runs) |_| {
-        timer.reset();
+        const start = std.time.Instant.now();
         var c = try DynamicMatrix.multiply(allocator, a, b);
-        total_time_ns += timer.read();
+        const end = std.time.Instant.now();
+        total_time_ns += end.since(start);
         c.deinit();
     }
 
