@@ -32,19 +32,13 @@ jobs:
 
       # Zig Build and Test
       - name: Build Zig project
-        run: |
-          cd zig
-          pixi run -- zig build -Doptimize=ReleaseFast
+        run: pixi run build-zig
 
       - name: Run Zig tests
-        run: |
-          cd zig
-          pixi run -- zig build test
+        run: pixi run test-zig
 
       - name: Run Zig example
-        run: |
-          cd zig
-          pixi run -- zig build run -Doptimize=ReleaseFast
+        run: pixi run run-zig-example
 
       # Benchmarks
       - name: Run C++ Benchmark
@@ -58,6 +52,5 @@ jobs:
         run: |
           echo "## Zig Benchmark (Pure Zig)" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
-          cd zig
-          pixi run -- zig build benchmark -Doptimize=ReleaseFast | tee -a $GITHUB_STEP_SUMMARY
+          pixi run benchmark-zig | tee -a $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
