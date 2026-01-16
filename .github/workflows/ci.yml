@@ -57,7 +57,14 @@ jobs:
           echo '```' >> $GITHUB_STEP_SUMMARY
 
       - name: Build Zig with MKL
-        run: pixi run build-zig-mkl
+        run: |
+          # Create symlink for lib64 compatibility (MKL from conda-forge expects RHEL-style paths)
+          sudo mkdir -p /lib64
+          sudo ln -sf /lib/x86_64-linux-gnu/libm.so.6 /lib64/libm.so.6
+          sudo ln -sf /lib/x86_64-linux-gnu/libc.so.6 /lib64/libc.so.6
+          sudo ln -sf /lib/x86_64-linux-gnu/libpthread.so.0 /lib64/libpthread.so.0
+          sudo ln -sf /lib/x86_64-linux-gnu/libdl.so.2 /lib64/libdl.so.2
+          pixi run build-zig-mkl
 
       - name: Run Zig Benchmark (MKL)
         run: |
