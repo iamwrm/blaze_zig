@@ -27,20 +27,12 @@ pub fn build(b: *std.Build) void {
         fn configure(exe: *std.Build.Step.Compile, prefix: []const u8, allocator: std.mem.Allocator) void {
             const lib_path = std.fmt.allocPrint(allocator, "{s}/lib", .{prefix}) catch unreachable;
 
-            // Link libc first (required for C FFI)
-            exe.linkLibC();
-
             // Add library search path and rpath
             exe.addLibraryPath(.{ .cwd_relative = lib_path });
             exe.addRPath(.{ .cwd_relative = lib_path });
 
-            // Link MKL runtime library
+            // Link MKL runtime library (it handles its own dependencies)
             exe.linkSystemLibrary("mkl_rt");
-
-            // Link pthread (MKL uses threads)
-            exe.linkSystemLibrary("pthread");
-            exe.linkSystemLibrary("m");
-            exe.linkSystemLibrary("dl");
         }
     }.configure;
 
