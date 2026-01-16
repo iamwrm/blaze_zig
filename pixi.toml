@@ -37,8 +37,8 @@ benchmark-cpp = { cmd = "./build/cpp/blaze_benchmark", depends-on = ["build-cpp"
 
 # Zig tasks (use downloaded zig with MKL)
 build-zig = { cmd = "../external/zig/zig build -Doptimize=ReleaseFast -Duse-mkl=true", cwd = "zig", depends-on = ["setup-zig"] }
-run-zig-example = { cmd = "LD_LIBRARY_PATH=$CONDA_PREFIX/lib ./zig-out/bin/blaze_example", cwd = "zig", depends-on = ["build-zig"] }
-benchmark-zig = { cmd = "LD_LIBRARY_PATH=$CONDA_PREFIX/lib ./zig-out/bin/blaze_benchmark", cwd = "zig", depends-on = ["build-zig"] }
+run-zig-example = { cmd = "MKL_THREADING_LAYER=GNU LD_LIBRARY_PATH=$CONDA_PREFIX/lib ./zig-out/bin/blaze_example", cwd = "zig", depends-on = ["build-zig"] }
+benchmark-zig = { cmd = "MKL_THREADING_LAYER=GNU LD_LIBRARY_PATH=$CONDA_PREFIX/lib ./zig-out/bin/blaze_benchmark", cwd = "zig", depends-on = ["build-zig"] }
 test-zig = { cmd = "../external/zig/zig build test", cwd = "zig", depends-on = ["setup-zig"] }
 
 # Combined tasks
