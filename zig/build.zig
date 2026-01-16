@@ -22,8 +22,8 @@ pub fn build(b: *std.Build) void {
     });
     blaze_mod.addOptions("build_options", options);
 
-    // Helper function to configure MKL linking for an executable
-    const configureMkl = struct {
+    // Helper function to configure BLAS linking for an executable (using OpenBLAS)
+    const configureBlas = struct {
         fn configure(exe: *std.Build.Step.Compile, prefix: []const u8, allocator: std.mem.Allocator) void {
             const lib_path = std.fmt.allocPrint(allocator, "{s}/lib", .{prefix}) catch unreachable;
 
@@ -31,8 +31,8 @@ pub fn build(b: *std.Build) void {
             exe.addLibraryPath(.{ .cwd_relative = lib_path });
             exe.addRPath(.{ .cwd_relative = lib_path });
 
-            // Link MKL runtime library (it handles its own dependencies)
-            exe.linkSystemLibrary("mkl_rt");
+            // Link OpenBLAS (provides CBLAS interface)
+            exe.linkSystemLibrary("openblas");
         }
     }.configure;
 
@@ -51,7 +51,7 @@ pub fn build(b: *std.Build) void {
     example_exe.root_module.addOptions("build_options", options);
     if (use_mkl) {
         if (conda_prefix) |prefix| {
-            configureMkl(example_exe, prefix, b.allocator);
+            configureBlas(example_exe, prefix, b.allocator);
         }
     }
     b.installArtifact(example_exe);
@@ -77,7 +77,7 @@ pub fn build(b: *std.Build) void {
     benchmark_exe.root_module.addOptions("build_options", options);
     if (use_mkl) {
         if (conda_prefix) |prefix| {
-            configureMkl(benchmark_exe, prefix, b.allocator);
+            configureBlas(benchmark_exe, prefix, b.allocator);
         }
     }
     b.installArtifact(benchmark_exe);
