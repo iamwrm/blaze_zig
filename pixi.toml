@@ -27,13 +27,7 @@ xz = ">=5.4"
 setup-blaze = { cmd = "git clone --depth 1 https://bitbucket.org/blaze-lib/blaze.git external/blaze || true" }
 
 # Download Zig from official site
-setup-zig = { cmd = """
-if [ ! -f external/zig/zig ]; then
-    mkdir -p external
-    curl -L https://ziglang.org/download/0.15.2/zig-linux-x86_64-0.15.2.tar.xz | tar -xJ -C external
-    mv external/zig-linux-x86_64-0.15.2 external/zig
-fi
-""" }
+setup-zig = { cmd = "bash -c 'test -f external/zig/zig || (mkdir -p external && curl -L https://ziglang.org/download/0.15.2/zig-linux-x86_64-0.15.2.tar.xz | tar -xJ -C external && mv external/zig-linux-x86_64-0.15.2 external/zig)'" }
 
 # C++ tasks
 configure-cpp = { cmd = "cmake -G Ninja -B build/cpp -S cpp -DCMAKE_BUILD_TYPE=Release", depends-on = ["setup-blaze"] }
