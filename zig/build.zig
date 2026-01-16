@@ -6,7 +6,7 @@ pub fn build(b: *std.Build) void {
 
     // Create blaze library module
     const blaze_mod = b.addModule("blaze", .{
-        .root = b.path("src/blaze.zig"),
+        .root_source_file = b.path("src/blaze.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -14,11 +14,15 @@ pub fn build(b: *std.Build) void {
     // Example executable
     const example_exe = b.addExecutable(.{
         .name = "blaze_example",
-        .root = b.path("src/main.zig"),
-        .target = target,
-        .optimize = optimize,
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/main.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{
+                .{ .name = "blaze", .module = blaze_mod },
+            },
+        }),
     });
-    example_exe.root_module.addImport("blaze", blaze_mod);
     b.installArtifact(example_exe);
 
     // Run example command
@@ -30,11 +34,15 @@ pub fn build(b: *std.Build) void {
     // Benchmark executable
     const benchmark_exe = b.addExecutable(.{
         .name = "blaze_benchmark",
-        .root = b.path("src/benchmark.zig"),
-        .target = target,
-        .optimize = optimize,
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/benchmark.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{
+                .{ .name = "blaze", .module = blaze_mod },
+            },
+        }),
     });
-    benchmark_exe.root_module.addImport("blaze", blaze_mod);
     b.installArtifact(benchmark_exe);
 
     // Benchmark command
@@ -45,9 +53,11 @@ pub fn build(b: *std.Build) void {
 
     // Tests
     const lib_unit_tests = b.addTest(.{
-        .root = b.path("src/blaze.zig"),
-        .target = target,
-        .optimize = optimize,
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/blaze.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
     });
     const run_lib_unit_tests = b.addRunArtifact(lib_unit_tests);
     const test_step = b.step("test", "Run unit tests");
