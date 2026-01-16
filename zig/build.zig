@@ -22,14 +22,27 @@ pub fn build(b: *std.Build) void {
     });
     blaze_mod.addOptions("build_options", options);
 
-    // Link MKL if enabled and available
-    if (use_mkl) {
-        if (conda_prefix) |prefix| {
-            const lib_path = std.fmt.allocPrint(b.allocator, "{s}/lib", .{prefix}) catch unreachable;
-            blaze_mod.addLibraryPath(.{ .cwd_relative = lib_path });
-            blaze_mod.linkSystemLibrary("mkl_rt", .{});
+    // Helper function to configure MKL linking for an executable
+    const configureMkl = struct {
+        fn configure(exe: *std.Build.Step.Compile, prefix: []const u8, allocator: std.mem.Allocator) void {
+            const lib_path = std.fmt.allocPrint(allocator, "{s}/lib", .{prefix}) catch unreachable;
+
+            // Link libc first (required for C FFI)
+            exe.linkLibC();
+
+            // Add library search path and rpath
+            exe.addLibraryPath(.{ .cwd_relative = lib_path });
+            exe.addRPath(.{ .cwd_relative = lib_path });
+
+            // Link MKL runtime library
+            exe.linkSystemLibrary("mkl_rt");
+
+            // Link pthread (MKL uses threads)
+            exe.linkSystemLibrary("pthread");
+            exe.linkSystemLibrary("m");
+            exe.linkSystemLibrary("dl");
         }
-    }
+    }.configure;
 
     // Example executable
     const example_exe = b.addExecutable(.{
@@ -46,10 +59,7 @@ pub fn build(b: *std.Build) void {
     example_exe.root_module.addOptions("build_options", options);
     if (use_mkl) {
         if (conda_prefix) |prefix| {
-            const lib_path = std.fmt.allocPrint(b.allocator, "{s}/lib", .{prefix}) catch unreachable;
-            example_exe.root_module.addLibraryPath(.{ .cwd_relative = lib_path });
-            example_exe.root_module.linkSystemLibrary("mkl_rt", .{});
-            example_exe.addRPath(.{ .cwd_relative = lib_path });
+            configureMkl(example_exe, prefix, b.allocator);
         }
     }
     b.installArtifact(example_exe);
@@ -75,10 +85,7 @@ pub fn build(b: *std.Build) void {
     benchmark_exe.root_module.addOptions("build_options", options);
     if (use_mkl) {
         if (conda_prefix) |prefix| {
-            const lib_path = std.fmt.allocPrint(b.allocator, "{s}/lib", .{prefix}) catch unreachable;
-            benchmark_exe.root_module.addLibraryPath(.{ .cwd_relative = lib_path });
-            benchmark_exe.root_module.linkSystemLibrary("mkl_rt", .{});
-            benchmark_exe.addRPath(.{ .cwd_relative = lib_path });
+            configureMkl(benchmark_exe, prefix, b.allocator);
         }
     }
     b.installArtifact(benchmark_exe);
