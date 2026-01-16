@@ -6,6 +6,17 @@ const blaze = @import("blaze");
 const DynamicMatrix = blaze.DynamicMatrix(f64);
 const DynamicVector = blaze.DynamicVector(f64);
 
+/// Get a string describing the current BLAS backend
+fn getBackendName() []const u8 {
+    if (blaze.use_intel_mkl) {
+        return "Intel MKL";
+    } else if (blaze.use_openblas) {
+        return "OpenBLAS";
+    } else {
+        return "Pure Zig";
+    }
+}
+
 pub fn main() !void {
     const stdout = std.io.getStdOut().writer();
 
@@ -14,7 +25,8 @@ pub fn main() !void {
     const allocator = gpa.allocator();
 
     try stdout.print("Blaze-Zig Matrix Operations Example\n", .{});
-    try stdout.print("====================================\n\n", .{});
+    try stdout.print("====================================\n", .{});
+    try stdout.print("Backend: {s}\n\n", .{getBackendName()});
 
     // Create matrices
     var a = try DynamicMatrix.fromSlice(allocator, 2, 3, .{

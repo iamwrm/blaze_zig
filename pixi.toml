@@ -38,11 +38,22 @@ build-cpp = { cmd = "cmake --build build/cpp", depends-on = ["configure-cpp"] }
 run-cpp-example = { cmd = "./build/cpp/blaze_example", depends-on = ["build-cpp"] }
 benchmark-cpp = { cmd = "./build/cpp/blaze_benchmark", depends-on = ["build-cpp"] }
 
-# Zig tasks (use downloaded zig with pure Zig implementation)
+# Zig tasks - Pure Zig (no BLAS)
 build-zig = { cmd = "../external/zig/zig build -Doptimize=ReleaseFast", cwd = "zig", depends-on = ["setup-zig"] }
 run-zig-example = { cmd = "./zig-out/bin/blaze_example", cwd = "zig", depends-on = ["build-zig"] }
 benchmark-zig = { cmd = "./zig-out/bin/blaze_benchmark", cwd = "zig", depends-on = ["build-zig"] }
 test-zig = { cmd = "../external/zig/zig build test", cwd = "zig", depends-on = ["setup-zig"] }
 
+# Zig tasks - with Intel MKL
+build-zig-mkl = { cmd = "../external/zig/zig build -Doptimize=ReleaseFast -Dblas=mkl", cwd = "zig", depends-on = ["setup-zig"] }
+run-zig-mkl-example = { cmd = "MKL_THREADING_LAYER=GNU ./zig-out/bin/blaze_example", cwd = "zig", depends-on = ["build-zig-mkl"] }
+benchmark-zig-mkl = { cmd = "MKL_THREADING_LAYER=GNU ./zig-out/bin/blaze_benchmark", cwd = "zig", depends-on = ["build-zig-mkl"] }
+
+# Zig tasks - with OpenBLAS
+build-zig-openblas = { cmd = "../external/zig/zig build -Doptimize=ReleaseFast -Dblas=openblas", cwd = "zig", depends-on = ["setup-zig"] }
+run-zig-openblas-example = { cmd = "./zig-out/bin/blaze_example", cwd = "zig", depends-on = ["build-zig-openblas"] }
+benchmark-zig-openblas = { cmd = "./zig-out/bin/blaze_benchmark", cwd = "zig", depends-on = ["build-zig-openblas"] }
+
 # Combined tasks
 benchmark-all = { depends-on = ["benchmark-cpp", "benchmark-zig"] }
+benchmark-all-blas = { depends-on = ["benchmark-cpp", "benchmark-zig-mkl"] }

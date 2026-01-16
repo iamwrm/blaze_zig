@@ -49,9 +49,19 @@ jobs:
           pixi run benchmark-cpp | tee -a $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
 
-      - name: Run Zig Benchmark
+      - name: Run Zig Benchmark (Pure Zig)
         run: |
           echo "## Zig Benchmark (Pure Zig)" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
           pixi run benchmark-zig | tee -a $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Build Zig with MKL
+        run: pixi run build-zig-mkl
+
+      - name: Run Zig Benchmark (MKL)
+        run: |
+          echo "## Zig Benchmark (Zig + MKL)" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          pixi run benchmark-zig-mkl | tee -a $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY

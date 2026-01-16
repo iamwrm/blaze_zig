@@ -1,18 +1,36 @@
 const std = @import("std");
 
+/// BLAS backend options
+const BlasBackend = enum {
+    none,
+    openblas,
+    mkl,
+};
+
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
-    // Build option to enable MKL
-    const use_mkl = b.option(bool, "use-mkl", "Use Intel MKL for BLAS operations") orelse false;
+    // Build option to select BLAS backend
+    const blas_backend = b.option(BlasBackend, "blas", "BLAS backend to use (none, openblas, mkl)") orelse .none;
 
-    // Get MKL library path from environment (set by pixi)
+    // Legacy option for backwards compatibility
+    const use_mkl_legacy = b.option(bool, "use-mkl", "Use Intel MKL for BLAS operations (legacy, prefer -Dblas=mkl)") orelse false;
+
+    // Determine effective backend
+    const effective_backend: BlasBackend = if (use_mkl_legacy) .mkl else blas_backend;
+
+    // Get library path from environment (set by pixi/conda)
     const conda_prefix = std.process.getEnvVarOwned(b.allocator, "CONDA_PREFIX") catch null;
+
+    // Check if BLAS is actually available
+    const blas_available = effective_backend != .none and conda_prefix != null;
 
     // Build options for the module
     const options = b.addOptions();
-    options.addOption(bool, "use_mkl", use_mkl and conda_prefix != null);
+    options.addOption(bool, "use_mkl", blas_available);
+    options.addOption(bool, "use_openblas", blas_available and effective_backend == .openblas);
+    options.addOption(bool, "use_intel_mkl", blas_available and effective_backend == .mkl);
 
     // Create blaze library module
     const blaze_mod = b.addModule("blaze", .{
@@ -22,8 +40,34 @@ pub fn build(b: *std.Build) void {
     });
     blaze_mod.addOptions("build_options", options);
 
-    // Helper function to configure BLAS linking for an executable (using OpenBLAS)
-    const configureBlas = struct {
+    // Helper function to configure MKL linking
+    const configureMkl = struct {
+        fn configure(exe: *std.Build.Step.Compile, prefix: []const u8, allocator: std.mem.Allocator) void {
+            const lib_path = std.fmt.allocPrint(allocator, "{s}/lib", .{prefix}) catch unreachable;
+            const include_path = std.fmt.allocPrint(allocator, "{s}/include", .{prefix}) catch unreachable;
+
+            // Add include path for MKL headers
+            exe.addIncludePath(.{ .cwd_relative = include_path });
+
+            // Add library search path and rpath
+            exe.addLibraryPath(.{ .cwd_relative = lib_path });
+            exe.addRPath(.{ .cwd_relative = lib_path });
+
+            // Link MKL libraries (sequential mode for deterministic results)
+            // Using the layered linking approach: interface + threading + core
+            exe.linkSystemLibrary("mkl_intel_lp64"); // Interface layer (LP64 = 32-bit int)
+            exe.linkSystemLibrary("mkl_sequential"); // Threading layer (sequential)
+            exe.linkSystemLibrary("mkl_core"); // Core library
+
+            // Required system libraries
+            exe.linkSystemLibrary("pthread");
+            exe.linkSystemLibrary("m");
+            exe.linkSystemLibrary("dl");
+        }
+    }.configure;
+
+    // Helper function to configure OpenBLAS linking
+    const configureOpenBlas = struct {
         fn configure(exe: *std.Build.Step.Compile, prefix: []const u8, allocator: std.mem.Allocator) void {
             const lib_path = std.fmt.allocPrint(allocator, "{s}/lib", .{prefix}) catch unreachable;
 
@@ -36,6 +80,26 @@ pub fn build(b: *std.Build) void {
         }
     }.configure;
 
+    // Helper to configure BLAS for an executable
+    const configureBlasForExe = struct {
+        fn configure(
+            exe: *std.Build.Step.Compile,
+            backend: BlasBackend,
+            prefix: ?[]const u8,
+            allocator: std.mem.Allocator,
+            mkl_fn: *const fn (*std.Build.Step.Compile, []const u8, std.mem.Allocator) void,
+            openblas_fn: *const fn (*std.Build.Step.Compile, []const u8, std.mem.Allocator) void,
+        ) void {
+            if (prefix) |p| {
+                switch (backend) {
+                    .mkl => mkl_fn(exe, p, allocator),
+                    .openblas => openblas_fn(exe, p, allocator),
+                    .none => {},
+                }
+            }
+        }
+    }.configure;
+
     // Example executable
     const example_exe = b.addExecutable(.{
         .name = "blaze_example",
@@ -44,12 +108,8 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
     example_exe.root_module.addImport("blaze", blaze_mod);
-    example_exe.root_module.addOptions("build_options", options);
-    if (use_mkl) {
-        if (conda_prefix) |prefix| {
-            configureBlas(example_exe, prefix, b.allocator);
-        }
-    }
+    // Note: build_options is accessed through blaze module, no need to add directly
+    configureBlasForExe(example_exe, effective_backend, conda_prefix, b.allocator, configureMkl, configureOpenBlas);
     b.installArtifact(example_exe);
 
     // Run example command
@@ -66,12 +126,8 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
     benchmark_exe.root_module.addImport("blaze", blaze_mod);
-    benchmark_exe.root_module.addOptions("build_options", options);
-    if (use_mkl) {
-        if (conda_prefix) |prefix| {
-            configureBlas(benchmark_exe, prefix, b.allocator);
-        }
-    }
+    // Note: build_options is accessed through blaze module, no need to add directly
+    configureBlasForExe(benchmark_exe, effective_backend, conda_prefix, b.allocator, configureMkl, configureOpenBlas);
     b.installArtifact(benchmark_exe);
 
     // Benchmark command
@@ -80,15 +136,17 @@ pub fn build(b: *std.Build) void {
     const benchmark_step = b.step("benchmark", "Run the benchmark");
     benchmark_step.dependOn(&benchmark_cmd.step);
 
-    // Tests (without MKL to keep tests simple)
+    // Tests (without BLAS to keep tests simple and portable)
     const lib_unit_tests = b.addTest(.{
         .root_source_file = b.path("src/blaze.zig"),
         .target = target,
         .optimize = optimize,
     });
-    // Tests use pure Zig implementation (no MKL)
+    // Tests use pure Zig implementation (no BLAS)
     const test_options = b.addOptions();
     test_options.addOption(bool, "use_mkl", false);
+    test_options.addOption(bool, "use_openblas", false);
+    test_options.addOption(bool, "use_intel_mkl", false);
     lib_unit_tests.root_module.addOptions("build_options", test_options);
 
     const run_lib_unit_tests = b.addRunArtifact(lib_unit_tests);

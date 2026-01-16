@@ -5,6 +5,17 @@ const blaze = @import("blaze");
 
 const DynamicMatrix = blaze.DynamicMatrix(f64);
 
+/// Get a string describing the current BLAS backend
+fn getBackendName() []const u8 {
+    if (blaze.use_intel_mkl) {
+        return "Intel MKL";
+    } else if (blaze.use_openblas) {
+        return "OpenBLAS";
+    } else {
+        return "Pure Zig (tiled algorithm)";
+    }
+}
+
 const BenchmarkResult = struct {
     size: usize,
     time_ms: f64,
@@ -61,7 +72,7 @@ pub fn main() !void {
     try stdout.print("Blaze-Zig Matrix Multiplication Benchmark\n", .{});
     try stdout.print("==========================================\n\n", .{});
 
-    try stdout.print("Mode: Single-threaded (pure Zig)\n\n", .{});
+    try stdout.print("Backend: {s}\n\n", .{getBackendName()});
 
     const sizes = [_]usize{ 64, 128, 256, 512, 1024, 2048 };
 
