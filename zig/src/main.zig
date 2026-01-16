@@ -7,10 +7,7 @@ const DynamicMatrix = blaze.DynamicMatrix(f64);
 const DynamicVector = blaze.DynamicVector(f64);
 
 pub fn main() !void {
-    var stdout_buffer: [4096]u8 = undefined;
-    var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
-    const stdout = &stdout_writer.interface;
-    defer stdout.flush() catch {};
+    const stdout = std.io.getStdOut().writer();
 
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();

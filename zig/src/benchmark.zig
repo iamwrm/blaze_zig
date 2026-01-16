@@ -53,10 +53,7 @@ fn benchmarkMatmul(allocator: std.mem.Allocator, n: usize, warmup_runs: u32, tim
 }
 
 pub fn main() !void {
-    var stdout_buffer: [4096]u8 = undefined;
-    var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
-    const stdout = &stdout_writer.interface;
-    defer stdout.flush() catch {};
+    const stdout = std.io.getStdOut().writer();
 
     // Use page allocator for large allocations (better performance)
     const allocator = std.heap.page_allocator;

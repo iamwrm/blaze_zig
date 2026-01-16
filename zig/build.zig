@@ -39,15 +39,11 @@ pub fn build(b: *std.Build) void {
     // Example executable
     const example_exe = b.addExecutable(.{
         .name = "blaze_example",
-        .root_module = b.createModule(.{
-            .root_source_file = b.path("src/main.zig"),
-            .target = target,
-            .optimize = optimize,
-            .imports = &.{
-                .{ .name = "blaze", .module = blaze_mod },
-            },
-        }),
+        .root_source_file = b.path("src/main.zig"),
+        .target = target,
+        .optimize = optimize,
     });
+    example_exe.root_module.addImport("blaze", blaze_mod);
     example_exe.root_module.addOptions("build_options", options);
     if (use_mkl) {
         if (conda_prefix) |prefix| {
@@ -65,15 +61,11 @@ pub fn build(b: *std.Build) void {
     // Benchmark executable
     const benchmark_exe = b.addExecutable(.{
         .name = "blaze_benchmark",
-        .root_module = b.createModule(.{
-            .root_source_file = b.path("src/benchmark.zig"),
-            .target = target,
-            .optimize = optimize,
-            .imports = &.{
-                .{ .name = "blaze", .module = blaze_mod },
-            },
-        }),
+        .root_source_file = b.path("src/benchmark.zig"),
+        .target = target,
+        .optimize = optimize,
     });
+    benchmark_exe.root_module.addImport("blaze", blaze_mod);
     benchmark_exe.root_module.addOptions("build_options", options);
     if (use_mkl) {
         if (conda_prefix) |prefix| {
@@ -90,11 +82,9 @@ pub fn build(b: *std.Build) void {
 
     // Tests (without MKL to keep tests simple)
     const lib_unit_tests = b.addTest(.{
-        .root_module = b.createModule(.{
-            .root_source_file = b.path("src/blaze.zig"),
-            .target = target,
-            .optimize = optimize,
-        }),
+        .root_source_file = b.path("src/blaze.zig"),
+        .target = target,
+        .optimize = optimize,
     });
     // Tests use pure Zig implementation (no MKL)
     const test_options = b.addOptions();
