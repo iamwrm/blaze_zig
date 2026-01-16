@@ -18,8 +18,8 @@ cxx-compiler = ">=1.7"
 mkl = ">=2024"
 mkl-devel = ">=2024"
 
-# Zig compiler (using 0.13.0 for stability)
-zig = ">=0.13,<0.14"
+# Zig compiler
+zig = ">=0.15.2"
 
 [tasks]
 # Setup Blaze (header-only library)
