@@ -28,7 +28,7 @@ fn benchmarkMatmul(allocator: std.mem.Allocator, n: usize, warmup_runs: u32, tim
     }
 
     // Timed runs
-    var total_time_ns: u64 = 0;
+    var total_time_ns: i128 = 0;
 
     for (0..timed_runs) |_| {
         const start = std.time.Instant.now();
