@@ -59,10 +59,8 @@ pub fn build(b: *std.Build) void {
             exe.linkSystemLibrary("mkl_sequential"); // Threading layer (sequential)
             exe.linkSystemLibrary("mkl_core"); // Core library
 
-            // Required system libraries
-            exe.linkSystemLibrary("pthread");
-            exe.linkSystemLibrary("m");
-            exe.linkSystemLibrary("dl");
+            // Link libc which provides pthread, m, dl automatically
+            exe.linkLibC();
         }
     }.configure;
 
