@@ -18,6 +18,11 @@ echo "Setting up Blaze library..."
 pixi run setup-blaze
 echo
 
+# Setup Zig compiler
+echo "Setting up Zig compiler..."
+pixi run setup-zig
+echo
+
 # Build and benchmark C++
 echo "==================================="
 echo "Building C++ (Blaze + MKL)..."

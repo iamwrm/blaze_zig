@@ -18,12 +18,22 @@ cxx-compiler = ">=1.7"
 mkl = ">=2024"
 mkl-devel = ">=2024"
 
-# Zig compiler
-zig = ">=0.15.2"
+# For downloading Zig
+curl = ">=8.0"
+xz = ">=5.4"
 
 [tasks]
 # Setup Blaze (header-only library)
 setup-blaze = { cmd = "git clone --depth 1 https://bitbucket.org/blaze-lib/blaze.git external/blaze || true" }
+
+# Download Zig from official site
+setup-zig = { cmd = """
+if [ ! -f external/zig/zig ]; then
+    mkdir -p external
+    curl -L https://ziglang.org/download/0.15.2/zig-linux-x86_64-0.15.2.tar.xz | tar -xJ -C external
+    mv external/zig-linux-x86_64-0.15.2 external/zig
+fi
+""" }
 
 # C++ tasks
 configure-cpp = { cmd = "cmake -G Ninja -B build/cpp -S cpp -DCMAKE_BUILD_TYPE=Release", depends-on = ["setup-blaze"] }
@@ -31,11 +41,11 @@ build-cpp = { cmd = "cmake --build build/cpp", depends-on = ["configure-cpp"] }
 run-cpp-example = { cmd = "./build/cpp/blaze_example", depends-on = ["build-cpp"] }
 benchmark-cpp = { cmd = "./build/cpp/blaze_benchmark", depends-on = ["build-cpp"] }
 
-# Zig tasks
-build-zig = { cmd = "zig build -Doptimize=ReleaseFast", cwd = "zig" }
-run-zig-example = { cmd = "zig build run -Doptimize=ReleaseFast", cwd = "zig", depends-on = ["build-zig"] }
-benchmark-zig = { cmd = "zig build benchmark -Doptimize=ReleaseFast", cwd = "zig" }
-test-zig = { cmd = "zig build test", cwd = "zig" }
+# Zig tasks (use downloaded zig)
+build-zig = { cmd = "../external/zig/zig build -Doptimize=ReleaseFast", cwd = "zig", depends-on = ["setup-zig"] }
+run-zig-example = { cmd = "../external/zig/zig build run -Doptimize=ReleaseFast", cwd = "zig", depends-on = ["build-zig"] }
+benchmark-zig = { cmd = "../external/zig/zig build benchmark -Doptimize=ReleaseFast", cwd = "zig", depends-on = ["setup-zig"] }
+test-zig = { cmd = "../external/zig/zig build test", cwd = "zig", depends-on = ["setup-zig"] }
 
 # Combined tasks
 benchmark-all = { depends-on = ["benchmark-cpp", "benchmark-zig"] }
