@@ -41,6 +41,9 @@ pub fn build(b: *std.Build) void {
     blaze_mod.addOptions("build_options", options);
 
     // Helper function to configure MKL linking
+    // Note: MKL from conda-forge may have compatibility issues with Ubuntu's glibc paths.
+    // For CI, OpenBLAS is recommended. MKL works best with RHEL-like systems or
+    // when the conda environment is properly configured.
     const configureMkl = struct {
         fn configure(exe: *std.Build.Step.Compile, prefix: []const u8, allocator: std.mem.Allocator) void {
             const lib_path = std.fmt.allocPrint(allocator, "{s}/lib", .{prefix}) catch unreachable;
@@ -53,11 +56,6 @@ pub fn build(b: *std.Build) void {
             exe.addLibraryPath(.{ .cwd_relative = lib_path });
             exe.addRPath(.{ .cwd_relative = lib_path });
 
-            // Add system library paths for Ubuntu (GitHub Actions)
-            // This is needed because MKL libraries are linked against system glibc
-            exe.addLibraryPath(.{ .cwd_relative = "/lib/x86_64-linux-gnu" });
-            exe.addLibraryPath(.{ .cwd_relative = "/usr/lib/x86_64-linux-gnu" });
-
             // Use MKL Single Dynamic Library (SDL) for simpler linking
             // mkl_rt automatically loads the appropriate interface, threading, and core libraries
             exe.linkSystemLibrary("mkl_rt");
@@ -68,6 +66,7 @@ pub fn build(b: *std.Build) void {
     }.configure;
 
     // Helper function to configure OpenBLAS linking
+    // OpenBLAS is more portable than MKL and works well on Ubuntu/Debian systems.
     const configureOpenBlas = struct {
         fn configure(exe: *std.Build.Step.Compile, prefix: []const u8, allocator: std.mem.Allocator) void {
             const lib_path = std.fmt.allocPrint(allocator, "{s}/lib", .{prefix}) catch unreachable;
@@ -78,6 +77,9 @@ pub fn build(b: *std.Build) void {
 
             // Link OpenBLAS (provides CBLAS interface)
             exe.linkSystemLibrary("openblas");
+
+            // Link libc for system dependencies
+            exe.linkLibC();
         }
     }.configure;
 
