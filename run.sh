@@ -56,7 +56,7 @@ pixi run run-zig-example
 echo
 
 echo "==================================="
-echo "Zig Benchmark (Pure Zig)"
+echo "Zig Benchmark (Zig + MKL)"
 echo "==================================="
 pixi run benchmark-zig
 echo
