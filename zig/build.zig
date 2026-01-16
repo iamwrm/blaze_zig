@@ -4,21 +4,31 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
+    // Build option to enable MKL
+    const use_mkl = b.option(bool, "use-mkl", "Use Intel MKL for BLAS operations") orelse false;
+
     // Get MKL library path from environment (set by pixi)
     const conda_prefix = std.process.getEnvVarOwned(b.allocator, "CONDA_PREFIX") catch null;
 
-    // Create blaze library module with BLAS support
+    // Build options for the module
+    const options = b.addOptions();
+    options.addOption(bool, "use_mkl", use_mkl and conda_prefix != null);
+
+    // Create blaze library module
     const blaze_mod = b.addModule("blaze", .{
         .root_source_file = b.path("src/blaze.zig"),
         .target = target,
         .optimize = optimize,
     });
+    blaze_mod.addOptions("build_options", options);
 
-    // Link MKL to the blaze module
-    if (conda_prefix) |prefix| {
-        const lib_path = std.fmt.allocPrint(b.allocator, "{s}/lib", .{prefix}) catch unreachable;
-        blaze_mod.addLibraryPath(.{ .cwd_relative = lib_path });
-        blaze_mod.linkSystemLibrary("mkl_rt", .{});
+    // Link MKL if enabled and available
+    if (use_mkl) {
+        if (conda_prefix) |prefix| {
+            const lib_path = std.fmt.allocPrint(b.allocator, "{s}/lib", .{prefix}) catch unreachable;
+            blaze_mod.addLibraryPath(.{ .cwd_relative = lib_path });
+            blaze_mod.linkSystemLibrary("mkl_rt", .{});
+        }
     }
 
     // Example executable
@@ -33,10 +43,13 @@ pub fn build(b: *std.Build) void {
             },
         }),
     });
-    if (conda_prefix) |prefix| {
-        const lib_path = std.fmt.allocPrint(b.allocator, "{s}/lib", .{prefix}) catch unreachable;
-        example_exe.root_module.addLibraryPath(.{ .cwd_relative = lib_path });
-        example_exe.root_module.linkSystemLibrary("mkl_rt", .{});
+    example_exe.root_module.addOptions("build_options", options);
+    if (use_mkl) {
+        if (conda_prefix) |prefix| {
+            const lib_path = std.fmt.allocPrint(b.allocator, "{s}/lib", .{prefix}) catch unreachable;
+            example_exe.root_module.addLibraryPath(.{ .cwd_relative = lib_path });
+            example_exe.root_module.linkSystemLibrary("mkl_rt", .{});
+        }
     }
     b.installArtifact(example_exe);
 
@@ -58,10 +71,13 @@ pub fn build(b: *std.Build) void {
             },
         }),
     });
-    if (conda_prefix) |prefix| {
-        const lib_path = std.fmt.allocPrint(b.allocator, "{s}/lib", .{prefix}) catch unreachable;
-        benchmark_exe.root_module.addLibraryPath(.{ .cwd_relative = lib_path });
-        benchmark_exe.root_module.linkSystemLibrary("mkl_rt", .{});
+    benchmark_exe.root_module.addOptions("build_options", options);
+    if (use_mkl) {
+        if (conda_prefix) |prefix| {
+            const lib_path = std.fmt.allocPrint(b.allocator, "{s}/lib", .{prefix}) catch unreachable;
+            benchmark_exe.root_module.addLibraryPath(.{ .cwd_relative = lib_path });
+            benchmark_exe.root_module.linkSystemLibrary("mkl_rt", .{});
+        }
     }
     b.installArtifact(benchmark_exe);
 
@@ -71,7 +87,7 @@ pub fn build(b: *std.Build) void {
     const benchmark_step = b.step("benchmark", "Run the benchmark");
     benchmark_step.dependOn(&benchmark_cmd.step);
 
-    // Tests (without MKL for simplicity)
+    // Tests (without MKL to keep tests simple)
     const lib_unit_tests = b.addTest(.{
         .root_module = b.createModule(.{
             .root_source_file = b.path("src/blaze.zig"),
@@ -79,11 +95,11 @@ pub fn build(b: *std.Build) void {
             .optimize = optimize,
         }),
     });
-    if (conda_prefix) |prefix| {
-        const lib_path = std.fmt.allocPrint(b.allocator, "{s}/lib", .{prefix}) catch unreachable;
-        lib_unit_tests.root_module.addLibraryPath(.{ .cwd_relative = lib_path });
-        lib_unit_tests.root_module.linkSystemLibrary("mkl_rt", .{});
-    }
+    // Tests use pure Zig implementation (no MKL)
+    const test_options = b.addOptions();
+    test_options.addOption(bool, "use_mkl", false);
+    lib_unit_tests.root_module.addOptions("build_options", test_options);
+
     const run_lib_unit_tests = b.addRunArtifact(lib_unit_tests);
     const test_step = b.step("test", "Run unit tests");
     test_step.dependOn(&run_lib_unit_tests.step);
