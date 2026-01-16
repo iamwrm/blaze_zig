@@ -1,0 +1,75 @@
+name: CI
+
+on:
+  push:
+    branches: [main, claude/*]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Pixi
+        uses: prefix-dev/setup-pixi@v0.8.1
+        with:
+          pixi-version: v0.63.1
+          cache: true
+
+      - name: Clone Blaze library
+        run: pixi run setup-blaze
+
+      - name: Build C++ examples
+        run: pixi run build-cpp
+
+      - name: Run C++ example
+        run: pixi run run-cpp-example
+
+      - name: Build Zig project
+        run: |
+          cd zig
+          pixi run -- zig build -Doptimize=ReleaseFast
+
+      - name: Run Zig tests
+        run: |
+          cd zig
+          pixi run -- zig build test
+
+      - name: Run Zig example
+        run: |
+          cd zig
+          pixi run -- zig build run -Doptimize=ReleaseFast
+
+  benchmark:
+    runs-on: ubuntu-latest
+    needs: build-and-test
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Pixi
+        uses: prefix-dev/setup-pixi@v0.8.1
+        with:
+          pixi-version: v0.63.1
+          cache: true
+
+      - name: Clone Blaze library
+        run: pixi run setup-blaze
+
+      - name: Build all
+        run: |
+          pixi run build-cpp
+          cd zig && pixi run -- zig build -Doptimize=ReleaseFast
+
+      - name: Run C++ Benchmark
+        run: pixi run benchmark-cpp
+
+      - name: Run Zig Benchmark
+        run: |
+          cd zig
+          pixi run -- zig build benchmark -Doptimize=ReleaseFast

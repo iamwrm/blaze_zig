@@ -1,0 +1,25 @@
+# Pixi environments
+.pixi/*
+!.pixi/config.toml
+pixi.lock
+
+# Build artifacts
+build/
+
+# Zig build artifacts
+zig/.zig-cache/
+zig/zig-out/
+
+# External dependencies (downloaded at build time)
+external/
+
+# Editor files
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
