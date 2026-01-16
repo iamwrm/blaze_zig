@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 jobs:
-  build-and-test:
+  build-test-benchmark:
     runs-on: ubuntu-latest
 
     steps:
@@ -23,12 +23,14 @@ jobs:
       - name: Clone Blaze library
         run: pixi run setup-blaze
 
+      # C++ Build and Test
       - name: Build C++ examples
         run: pixi run build-cpp
 
       - name: Run C++ example
         run: pixi run run-cpp-example
 
+      # Zig Build and Test
       - name: Build Zig project
         run: |
           cd zig
@@ -44,32 +46,18 @@ jobs:
           cd zig
           pixi run -- zig build run -Doptimize=ReleaseFast
 
-  benchmark:
-    runs-on: ubuntu-latest
-    needs: build-and-test
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Install Pixi
-        uses: prefix-dev/setup-pixi@v0.8.1
-        with:
-          pixi-version: v0.63.1
-          cache: true
-
-      - name: Clone Blaze library
-        run: pixi run setup-blaze
-
-      - name: Build all
-        run: |
-          pixi run build-cpp
-          cd zig && pixi run -- zig build -Doptimize=ReleaseFast
-
+      # Benchmarks
       - name: Run C++ Benchmark
-        run: pixi run benchmark-cpp
+        run: |
+          echo "## C++ Benchmark (Blaze + MKL)" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          pixi run benchmark-cpp | tee -a $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
 
       - name: Run Zig Benchmark
         run: |
+          echo "## Zig Benchmark (Pure Zig)" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
           cd zig
-          pixi run -- zig build benchmark -Doptimize=ReleaseFast
+          pixi run -- zig build benchmark -Doptimize=ReleaseFast | tee -a $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
