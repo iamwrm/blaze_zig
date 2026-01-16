@@ -1,0 +1,41 @@
+[workspace]
+authors = ["Claude <noreply@anthropic.com>"]
+channels = ["conda-forge"]
+name = "blaze_zig"
+platforms = ["linux-64"]
+version = "0.1.0"
+
+[dependencies]
+# Build tools
+cmake = ">=3.28"
+ninja = ">=1.11"
+git = ">=2.40"
+
+# C++ compiler
+cxx-compiler = ">=1.7"
+
+# Intel MKL for BLAS/LAPACK
+mkl = ">=2024"
+mkl-devel = ">=2024"
+
+# Zig compiler (using 0.13.0 for stability)
+zig = ">=0.13,<0.14"
+
+[tasks]
+# Setup Blaze (header-only library)
+setup-blaze = { cmd = "git clone --depth 1 https://bitbucket.org/blaze-lib/blaze.git external/blaze || true" }
+
+# C++ tasks
+configure-cpp = { cmd = "cmake -G Ninja -B build/cpp -S cpp -DCMAKE_BUILD_TYPE=Release", depends-on = ["setup-blaze"] }
+build-cpp = { cmd = "cmake --build build/cpp", depends-on = ["configure-cpp"] }
+run-cpp-example = { cmd = "./build/cpp/blaze_example", depends-on = ["build-cpp"] }
+benchmark-cpp = { cmd = "./build/cpp/blaze_benchmark", depends-on = ["build-cpp"] }
+
+# Zig tasks
+build-zig = { cmd = "zig build -Doptimize=ReleaseFast", cwd = "zig" }
+run-zig-example = { cmd = "zig build run -Doptimize=ReleaseFast", cwd = "zig", depends-on = ["build-zig"] }
+benchmark-zig = { cmd = "zig build benchmark -Doptimize=ReleaseFast", cwd = "zig" }
+test-zig = { cmd = "zig build test", cwd = "zig" }
+
+# Combined tasks
+benchmark-all = { depends-on = ["benchmark-cpp", "benchmark-zig"] }
