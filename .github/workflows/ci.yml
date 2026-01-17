@@ -22,4 +22,4 @@ jobs:
           locked: false
 
       - name: Run build and benchmarks
-        run: ./run.sh ci
+        run: ./run.sh setup,build,zig-bench,compare
