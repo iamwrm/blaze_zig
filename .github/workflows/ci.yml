@@ -20,6 +20,7 @@ jobs:
           pixi-version: v0.63.1
           cache: true
           locked: false
+          run-install: false  # Don't run pixi install here; ./run.sh setup builds local channel first
 
       - name: Setup and build
         run: ./run.sh setup,build
