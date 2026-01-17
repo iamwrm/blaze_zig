@@ -1,0 +1,12 @@
+[workspace]
+name = "blaze-bootstrap"
+version = "0.1.0"
+description = "Bootstrap environment for building local packages"
+channels = ["conda-forge"]
+platforms = ["linux-64"]
+
+[dependencies]
+rattler-build = ">=0.35"
+
+[tasks]
+build-blaze = "rattler-build build --recipe ../recipes/blaze/recipe.yaml --output-dir ../local-channel"

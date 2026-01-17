@@ -11,7 +11,7 @@ Blaze-Zig is a minimal port of the Blaze C++ linear algebra library to Zig. It p
 All commands go through `run.sh`:
 
 ```bash
-./run.sh setup          # Install dependencies and download Blaze C++ library
+./run.sh setup          # Build Blaze package and install dependencies
 ./run.sh build          # Build both C++ and Zig benchmarks
 ./run.sh compare        # Run both benchmarks and compare results
 ./run.sh zig-bench      # Run only Zig benchmark
@@ -36,8 +36,12 @@ blaze_zig/
 │   ├── CMakeLists.txt        # CMake config
 │   ├── main.cpp              # C++ benchmark
 │   └── example.cpp           # C++ example
+├── recipes/                  # Local conda package recipes
+│   └── blaze/recipe.yaml     # Blaze C++ library package recipe
+├── bootstrap/                # Bootstrap environment for building local packages
+│   └── pixi.toml             # rattler-build dependency
 ├── run.sh                    # Build/run orchestration script
-├── pixi.toml                 # Dependency management (CMake, MKL, Zig)
+├── pixi.toml                 # Dependency management (CMake, MKL, Zig, Blaze)
 └── .github/workflows/ci.yml  # GitHub Actions CI
 ```
 
@@ -72,3 +76,10 @@ gh run view --log     # View latest run logs
 ## Environment
 
 Pixi manages dependencies. MKL environment variables are set automatically in `run.sh`.
+
+### Local Channel
+
+Blaze C++ library is built as a local conda package using rattler-build:
+- Recipe: `recipes/blaze/recipe.yaml`
+- Output: `local-channel/` (built at setup time, not committed)
+- Bootstrap environment: `pixi run -e bootstrap build-blaze`

@@ -2,13 +2,16 @@
 name = "blaze-zig-port"
 version = "0.1.0"
 description = "Porting Blaze C++ library to Zig"
-channels = ["conda-forge"]
+channels = ["./local-channel", "conda-forge"]
 platforms = ["linux-64"]
 
 [dependencies]
 # Build tools
 cmake = ">=3.28"
 ninja = ">=1.11"
+
+# Blaze C++ library (from local channel, built via bootstrap.toml)
+blaze = ">=3.8"
 
 # C++ toolchain
 cxx-compiler = ">=1.7"

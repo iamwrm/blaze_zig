@@ -18,8 +18,8 @@ jobs:
         uses: prefix-dev/setup-pixi@v0.9.3
         with:
           pixi-version: v0.63.1
-          cache: true
-          locked: false
+          cache: false  # Can't cache when skipping install
+          run-install: false  # Don't run pixi install here; ./run.sh setup builds local channel first
 
       - name: Setup and build
         run: ./run.sh setup,build

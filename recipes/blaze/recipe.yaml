@@ -1,0 +1,35 @@
+context:
+  name: blaze
+  version: "3.8.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://bitbucket.org/blaze-lib/blaze/get/v${{ version }}.tar.gz
+  sha256: 13a2199e75b7a8540e84032b0b4aaff93148a8d221e2d410230d7a58f5dfbbd5
+
+build:
+  number: 0
+  noarch: generic
+  script:
+    - mkdir -p $PREFIX/include
+    - cp -r blaze $PREFIX/include/
+
+tests:
+  - package_contents:
+      include:
+        - blaze/Blaze.h
+        - blaze/Math.h
+
+about:
+  homepage: https://bitbucket.org/blaze-lib/blaze
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: A high performance C++ math library
+  description: |
+    Blaze is an open-source, high-performance C++ math library for dense
+    and sparse arithmetic. It combines the elegance and ease of use of a
+    domain-specific language with HPC-grade performance.
+  repository: https://bitbucket.org/blaze-lib/blaze
