@@ -4,6 +4,7 @@
 
 # Build artifacts
 build/
+build-cpp/
 
 # Zig build artifacts
 zig/.zig-cache/
@@ -11,6 +12,14 @@ zig/zig-out/
 
 # External dependencies (downloaded at build time)
 external/
+
+# blaze-zig-port artifacts (downloaded/built at runtime)
+blaze-zig-port/zig-0.13.0/
+blaze-zig-port/blaze/
+blaze-zig-port/build-cpp/
+blaze-zig-port/.pixi/
+blaze-zig-port/zig-blaze/.zig-cache/
+blaze-zig-port/zig-blaze/zig-out/
 
 # Editor files
 *.swp

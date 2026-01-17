@@ -21,37 +21,5 @@ jobs:
           cache: true
           locked: false
 
-      - name: Clone Blaze library
-        run: pixi run setup-blaze
-
-      # C++ Build and Test
-      - name: Build C++ examples
-        run: pixi run build-cpp
-
-      - name: Run C++ example
-        run: pixi run run-cpp-example
-
-      # Zig Build and Test
-      - name: Build Zig project
-        run: pixi run build-zig
-
-      - name: Run Zig tests
-        run: pixi run test-zig
-
-      - name: Run Zig example
-        run: pixi run run-zig-example
-
-      # Benchmarks
-      - name: Run C++ Benchmark
-        run: |
-          echo "## C++ Benchmark (Blaze + MKL)" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          pixi run benchmark-cpp | tee -a $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-
-      - name: Run Zig Benchmark
-        run: |
-          echo "## Zig Benchmark (Pure Zig)" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          pixi run benchmark-zig | tee -a $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
+      - name: Run blaze-zig-port build and benchmarks
+        run: bash blaze-zig-port/a.sh
