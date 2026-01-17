@@ -1,6 +1,8 @@
 # Pixi environments
 .pixi/*
 !.pixi/config.toml
+bootstrap/.pixi/
+bootstrap/pixi.lock
 
 # Build artifacts
 build/
@@ -10,8 +12,8 @@ build-cpp/
 zig-blaze/.zig-cache/
 zig-blaze/zig-out/
 
-# Downloaded dependencies (fetched at build time)
-blaze/
+# Local conda channel (built at setup time)
+local-channel/
 
 # Editor files
 *.swp

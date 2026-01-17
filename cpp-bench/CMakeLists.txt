@@ -6,8 +6,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_BUILD_TYPE Release)
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -march=native -DNDEBUG")
 
-# Blaze header-only library
-set(BLAZE_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/../blaze")
+# Blaze header-only library (from pixi environment)
+set(BLAZE_INCLUDE_DIR "$ENV{CONDA_PREFIX}/include")
 
 # MKL configuration
 set(MKL_ROOT "$ENV{MKLROOT}")

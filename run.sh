@@ -60,14 +60,16 @@ ZIG_BENCH="$PROJECT_DIR/zig-blaze/zig-out/bin/blaze_zig_bench"
 ZIG_EXAMPLE="$PROJECT_DIR/zig-blaze/zig-out/bin/blaze_zig_example"
 
 if has_command "$COMMAND_LIST" "setup"; then
-    echo "Installing pixi dependencies..."
-    pixi install
+    # Build Blaze package if not already built
+    if ! ls local-channel/noarch/blaze-*.conda 1>/dev/null 2>&1; then
+        echo "Building Blaze package with rattler-build..."
 
-    if [ ! -d "blaze" ]; then
-        echo "Downloading Blaze C++ library..."
-        curl -L -o blaze.tar.gz 'https://github.com/live-clones/blaze/archive/refs/tags/v3.8.2.tar.gz'
-        tar xzf blaze.tar.gz && mv blaze-3.8.2 blaze && rm blaze.tar.gz
+        # Use separate bootstrap project to avoid dependency conflicts
+        (cd bootstrap && pixi run build-blaze)
     fi
+
+    echo "Installing pixi dependencies (including Blaze from local channel)..."
+    pixi install
 
     echo "Setup complete!"
 fi
