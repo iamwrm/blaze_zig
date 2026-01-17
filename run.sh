@@ -24,7 +24,7 @@ RESET='\033[0m'
 
 # Check if command exists in comma-separated list
 has_command() {
-    [[ ",$1," == *",$2,"* ]]
+    [[ ",$COMMAND_LIST," == *",$1,"* ]]
 }
 
 show_help() {
@@ -39,6 +39,7 @@ Commands (comma-separated):
   compare     - Run both benchmarks
   cpp-example - Run C++ example
   zig-example - Run Zig example
+  clean       - Remove build artifacts
 
 Examples:
   $0 setup,build,compare
@@ -59,7 +60,7 @@ CPP_EXAMPLE="$PROJECT_DIR/build-cpp/blaze_example"
 ZIG_BENCH="$PROJECT_DIR/zig-blaze/zig-out/bin/blaze_zig_bench"
 ZIG_EXAMPLE="$PROJECT_DIR/zig-blaze/zig-out/bin/blaze_zig_example"
 
-if has_command "$COMMAND_LIST" "setup"; then
+if has_command "setup"; then
     # Build Blaze package if not already built
     if ! ls local-channel/noarch/blaze-*.conda 1>/dev/null 2>&1; then
         echo "Building Blaze package with rattler-build..."
@@ -74,9 +75,9 @@ if has_command "$COMMAND_LIST" "setup"; then
     echo "Setup complete!"
 fi
 
-if has_command "$COMMAND_LIST" "build"; then
+if has_command "build"; then
     echo "Building C++ benchmark..."
-    pixi run -- bash -c 'mkdir -p build-cpp && cd build-cpp && cmake ../cpp-bench -G Ninja && ninja'
+    pixi run -- bash -c 'mkdir -p build-cpp && cd build-cpp && cmake ../cpp-bench -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON && ninja'
 
     echo ""
     echo "Building Zig benchmark..."
@@ -86,27 +87,35 @@ if has_command "$COMMAND_LIST" "build"; then
     echo "Build complete!"
 fi
 
-if has_command "$COMMAND_LIST" "cpp-bench"; then
+if has_command "clean"; then
+    echo "Cleaning build artifacts..."
+    rm -rf "$PROJECT_DIR/build-cpp"
+    rm -rf "$PROJECT_DIR/zig-blaze/zig-out"
+    rm -rf "$PROJECT_DIR/zig-blaze/.zig-cache"
+    echo "Clean complete!"
+fi
+
+if has_command "cpp-bench"; then
     echo -e "${BLUE}Running C++ Blaze Benchmark...${RESET}"
     "$CPP_BENCH"
 fi
 
-if has_command "$COMMAND_LIST" "zig-bench"; then
+if has_command "zig-bench"; then
     echo -e "${GREEN}Running Zig Blaze Benchmark...${RESET}"
     "$ZIG_BENCH"
 fi
 
-if has_command "$COMMAND_LIST" "cpp-example"; then
+if has_command "cpp-example"; then
     echo -e "${BLUE}Running C++ Blaze Example...${RESET}"
     "$CPP_EXAMPLE"
 fi
 
-if has_command "$COMMAND_LIST" "zig-example"; then
+if has_command "zig-example"; then
     echo -e "${GREEN}Running Zig Blaze Example...${RESET}"
     "$ZIG_EXAMPLE"
 fi
 
-if has_command "$COMMAND_LIST" "compare"; then
+if has_command "compare"; then
     echo "========================================"
     echo "  Blaze C++ vs Zig Benchmark Comparison"
     echo "========================================"

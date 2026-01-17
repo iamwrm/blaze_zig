@@ -2,7 +2,7 @@ version: 6
 environments:
   default:
     channels:
-    - url: file:///home/user/blaze_zig/local-channel/
+    - url: file:///home/wr/workspace/blaze_zig/local-channel/
     - url: https://conda.anaconda.org/conda-forge/
     options:
       pypi-prerelease-mode: if-necessary-or-explicit
@@ -66,7 +66,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2025c-hc9c84f9_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/zig-0.15.2-h930564d_6.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/zstd-1.5.7-hb78ec9c_6.conda
-      - conda: /home/user/blaze_zig/local-channel/noarch/blaze-3.8.2-h4616a5c_0.conda
+      - conda: /home/wr/workspace/blaze_zig/local-channel/noarch/blaze-3.8.2-h4616a5c_0.conda
 packages:
 - conda: https://conda.anaconda.org/conda-forge/linux-64/_openmp_mutex-4.5-7_kmp_llvm.conda
   build_number: 7
@@ -107,14 +107,14 @@ packages:
   license_family: GPL
   size: 36310
   timestamp: 1766513143566
-- conda: /home/user/blaze_zig/local-channel/noarch/blaze-3.8.2-h4616a5c_0.conda
+- conda: /home/wr/workspace/blaze_zig/local-channel/noarch/blaze-3.8.2-h4616a5c_0.conda
   subdir: noarch
-  sha256: 1f3efb995ef14eec034887ac4918d58f0e9929da6b50e8ec86d2bb345861eee6
-  md5: d5cb617ff8e2a396d09bfb9002486413
-  channel: file:///home/user/blaze_zig/local-channel
+  sha256: 20e6fdaa6b8bdc28d2cbcdb06b0e65d469d5ee6b15adf6cdfe50e6eaaaf14dfe
+  md5: af21d54d59bf1c59d38d4a64ce706a91
+  channel: file:///home/wr/workspace/blaze_zig/local-channel
   license: BSD-3-Clause
-  size: 1211828
-  timestamp: 1768619568448
+  size: 1211909
+  timestamp: 1768621496344
 - conda: https://conda.anaconda.org/conda-forge/linux-64/bzip2-1.0.8-hda65f42_8.conda
   sha256: c30daba32ddebbb7ded490f0e371eae90f51e72db620554089103b4a6934b0d5
   md5: 51a19bba1b8ebfb60df25cde030b7ebc

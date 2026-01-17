@@ -18,6 +18,7 @@ All commands go through `run.sh`:
 ./run.sh cpp-bench      # Run only C++ benchmark
 ./run.sh zig-example    # Run Zig example
 ./run.sh cpp-example    # Run C++ example
+./run.sh clean          # Remove build artifacts
 ```
 
 Commands can be chained: `./run.sh setup,build,compare`
@@ -83,3 +84,5 @@ Blaze C++ library is built as a local conda package using rattler-build:
 - Recipe: `recipes/blaze/recipe.yaml`
 - Output: `local-channel/` (built at setup time, not committed)
 - Bootstrap environment: `pixi run -e bootstrap build-blaze`
+- `./run.sh setup` builds the package automatically if not present
+- `./run.sh clean` removes build artifacts but preserves `local-channel/`
