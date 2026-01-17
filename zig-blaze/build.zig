@@ -6,12 +6,12 @@ pub fn build(b: *std.Build) void {
 
     // Get MKL path from environment
     const mkl_root = std.posix.getenv("MKLROOT") orelse "/usr";
-    
+
     // MKL paths
     const mkl_include = b.fmt("{s}/include", .{mkl_root});
     const mkl_lib = b.fmt("{s}/lib", .{mkl_root});
 
-    // Blaze Zig library
+    // Blaze Zig library module
     const blaze_mod = b.addModule("blaze", .{
         .root_source_file = b.path("src/blaze.zig"),
         .target = target,
@@ -19,12 +19,14 @@ pub fn build(b: *std.Build) void {
     });
     blaze_mod.addIncludePath(.{ .cwd_relative = mkl_include });
 
-    // Benchmark executable
+    // Benchmark executable - using Zig 0.15 API with root_module
     const bench_exe = b.addExecutable(.{
         .name = "blaze_zig_bench",
-        .root_source_file = b.path("src/bench.zig"),
-        .target = target,
-        .optimize = optimize,
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/bench.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
     });
 
     bench_exe.root_module.addImport("blaze", blaze_mod);
@@ -52,12 +54,14 @@ pub fn build(b: *std.Build) void {
 
     b.installArtifact(bench_exe);
 
-    // Example executable
+    // Example executable - using Zig 0.15 API with root_module
     const example_exe = b.addExecutable(.{
         .name = "blaze_zig_example",
-        .root_source_file = b.path("src/example.zig"),
-        .target = target,
-        .optimize = optimize,
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/example.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
     });
 
     example_exe.root_module.addImport("blaze", blaze_mod);
@@ -84,11 +88,13 @@ pub fn build(b: *std.Build) void {
     const run_step = b.step("run", "Run the benchmark");
     run_step.dependOn(&run_cmd.step);
 
-    // Tests
+    // Tests - using Zig 0.15 API with root_module
     const tests = b.addTest(.{
-        .root_source_file = b.path("src/blaze.zig"),
-        .target = target,
-        .optimize = optimize,
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/blaze.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
     });
     tests.addIncludePath(.{ .cwd_relative = mkl_include });
     tests.addLibraryPath(.{ .cwd_relative = mkl_lib });

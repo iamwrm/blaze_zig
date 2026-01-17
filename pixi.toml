@@ -22,7 +22,7 @@ mkl-devel = ">=2024"
 mkl-include = ">=2024"
 
 # Zig compiler
-zig = ">=0.13"
+zig = ">=0.15"
 
 [activation]
 scripts = ["activate.sh"]

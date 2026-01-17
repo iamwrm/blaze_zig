@@ -93,7 +93,7 @@ pub fn DynamicMatrix(comptime T: type, comptime order: StorageOrder) type {
 
         /// Fill matrix with random values in [0, 1)
         pub fn fillRandom(self: *Self, seed: u64) void {
-            var prng = std.rand.DefaultPrng.init(seed);
+            var prng = std.Random.DefaultPrng.init(seed);
             const random = prng.random();
             for (self.data) |*elem| {
                 if (T == f32 or T == f64) {
