@@ -41,44 +41,54 @@ double calculate_gflops(size_t M, size_t N, size_t K, double time_ms) {
 }
 
 template<typename T>
-void run_benchmark(const std::string& type_name, size_t size) {
-    std::cout << "\n=== " << type_name << " Matrix Multiplication ===" << std::endl;
-    std::cout << "Matrix size: " << size << "x" << size << std::endl;
-    
+void run_benchmark(size_t size) {
     // Create matrices
     DynamicMatrix<T, rowMajor> A(size, size);
     DynamicMatrix<T, rowMajor> B(size, size);
     DynamicMatrix<T, rowMajor> C(size, size);
-    
+
     // Initialize with random values
     std::mt19937 gen(42);
     std::uniform_real_distribution<T> dist(0.0, 1.0);
-    
+
     for (size_t i = 0; i < size; ++i) {
         for (size_t j = 0; j < size; ++j) {
             A(i, j) = dist(gen);
             B(i, j) = dist(gen);
         }
     }
-    
+
     // Benchmark matrix multiplication
     auto matmul = [&]() {
         C = A * B;
     };
-    
+
     double time_ms = benchmark(matmul, 3, 10);
     double gflops = calculate_gflops(size, size, size, time_ms);
-    
-    std::cout << std::fixed << std::setprecision(3);
-    std::cout << "Time: " << time_ms << " ms" << std::endl;
-    std::cout << "GFLOPS: " << gflops << std::endl;
-    
+
+    // Calculate memory usage: 3 matrices * size * size * sizeof(T)
+    double memory_mb = (3.0 * size * size * sizeof(T)) / (1024.0 * 1024.0);
+
     // Verify result (compute checksum)
     T sum = 0;
     for (size_t i = 0; i < std::min(size, size_t(10)); ++i) {
         sum += C(i, i);
     }
-    std::cout << "Checksum (trace of first 10x10): " << sum << std::endl;
+
+    // Print tabular row
+    std::cout << std::left << std::setw(8) << size
+              << std::right << std::setw(10) << std::fixed << std::setprecision(3) << time_ms
+              << std::setw(10) << std::setprecision(1) << gflops
+              << std::setw(13) << std::setprecision(1) << memory_mb
+              << std::setw(12) << std::setprecision(3) << sum << std::endl;
+}
+
+void print_header() {
+    std::cout << std::left << std::setw(8) << "Size"
+              << std::right << std::setw(10) << "Time(ms)"
+              << std::setw(10) << "GFLOPS"
+              << std::setw(13) << "Memory(MB)"
+              << std::setw(12) << "Checksum" << std::endl;
 }
 
 int main() {
@@ -86,21 +96,21 @@ int main() {
     std::cout << "   Blaze C++ Matrix Multiplication" << std::endl;
     std::cout << "   Single-threaded MKL Benchmark" << std::endl;
     std::cout << "========================================" << std::endl;
-    
+
     // Test different matrix sizes
-    std::vector<size_t> sizes = {64, 128, 256, 512, 1024, 2048};
-    
+    std::vector<size_t> sizes = {256, 1024, 4096};
+
+    std::cout << "\n=== Double Precision (f64) ===" << std::endl;
+    print_header();
     for (size_t size : sizes) {
-        run_benchmark<double>("Double Precision (f64)", size);
+        run_benchmark<double>(size);
     }
-    
-    std::cout << "\n========================================" << std::endl;
-    std::cout << "   Single Precision Tests" << std::endl;
-    std::cout << "========================================" << std::endl;
-    
+
+    std::cout << "\n=== Single Precision (f32) ===" << std::endl;
+    print_header();
     for (size_t size : sizes) {
-        run_benchmark<float>("Single Precision (f32)", size);
+        run_benchmark<float>(size);
     }
-    
+
     return 0;
 }

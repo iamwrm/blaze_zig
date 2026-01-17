@@ -61,10 +61,6 @@ fn runBenchmark(
     writer: anytype,
 ) !void {
     const Matrix = DynamicMatrix(T, .RowMajor);
-    const type_name = if (T == f64) "f64" else "f32";
-
-    try writer.print("\n=== {s} Matrix Multiplication ===\n", .{type_name});
-    try writer.print("Matrix size: {d}x{d}\n", .{ size, size });
 
     // Create matrices
     var A = try Matrix.init(allocator, size, size);
@@ -97,6 +93,10 @@ fn runBenchmark(
 
     const gflops = calculateGflops(size, size, size, avg_ms);
 
+    // Calculate memory usage: 3 matrices * size * size * sizeof(T)
+    const memory_bytes: f64 = @as(f64, @floatFromInt(3 * size * size * @sizeOf(T)));
+    const memory_mb = memory_bytes / (1024.0 * 1024.0);
+
     // Compute checksum (trace of first 10x10)
     var checksum: T = 0;
     const check_size = @min(size, 10);
@@ -104,9 +104,8 @@ fn runBenchmark(
         checksum += C.get(i, i);
     }
 
-    try writer.print("Time: {d:.3} ms\n", .{avg_ms});
-    try writer.print("GFLOPS: {d:.3}\n", .{gflops});
-    try writer.print("Checksum (trace of first 10x10): {d:.3}\n", .{checksum});
+    // Print tabular row
+    try writer.print("{d:<8} {d:>10.3} {d:>10.1} {d:>13.1} {d:>12.3}\n", .{ size, avg_ms, gflops, memory_mb, checksum });
 }
 
 pub fn main() !void {
@@ -127,18 +126,18 @@ pub fn main() !void {
     try stdout.print("========================================\n", .{});
 
     // Test different matrix sizes
-    const sizes = [_]usize{ 64, 128, 256, 512, 1024, 2048 };
+    const sizes = [_]usize{ 256, 1024, 4096 };
 
     // Double precision tests
+    try stdout.print("\n=== Double Precision (f64) ===\n", .{});
+    try stdout.print("{s:<8} {s:>10} {s:>10} {s:>13} {s:>12}\n", .{ "Size", "Time(ms)", "GFLOPS", "Memory(MB)", "Checksum" });
     for (sizes) |size| {
         try runBenchmark(f64, allocator, size, stdout);
     }
 
-    try stdout.print("\n========================================\n", .{});
-    try stdout.print("   Single Precision Tests\n", .{});
-    try stdout.print("========================================\n", .{});
-
     // Single precision tests
+    try stdout.print("\n=== Single Precision (f32) ===\n", .{});
+    try stdout.print("{s:<8} {s:>10} {s:>10} {s:>13} {s:>12}\n", .{ "Size", "Time(ms)", "GFLOPS", "Memory(MB)", "Checksum" });
     for (sizes) |size| {
         try runBenchmark(f32, allocator, size, stdout);
     }
