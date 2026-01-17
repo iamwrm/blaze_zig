@@ -6,7 +6,7 @@ set -e
 cd "$(dirname "$0")"
 PROJECT_DIR="$(pwd)"
 PIXI_ENV="$PROJECT_DIR/.pixi/envs/default"
-ZIG="$PROJECT_DIR/zig-0.13.0/zig"
+ZIG="$PIXI_ENV/bin/zig"
 
 # MKL environment configuration
 export MKLROOT="$PIXI_ENV"
@@ -32,7 +32,7 @@ show_help() {
 Usage: $0 <commands>
 
 Commands (comma-separated):
-  setup       - Download dependencies (Blaze, Zig)
+  setup       - Install pixi dependencies and download Blaze
   build       - Build all targets
   cpp-bench   - Run C++ benchmark
   zig-bench   - Run Zig benchmark
@@ -67,12 +67,6 @@ if has_command "$COMMAND_LIST" "setup"; then
         echo "Downloading Blaze C++ library..."
         curl -L -o blaze.tar.gz 'https://github.com/live-clones/blaze/archive/refs/tags/v3.8.2.tar.gz'
         tar xzf blaze.tar.gz && mv blaze-3.8.2 blaze && rm blaze.tar.gz
-    fi
-
-    if [ ! -d "zig-0.13.0" ]; then
-        echo "Downloading Zig 0.13.0..."
-        curl -L -o zig.tar.xz 'https://ziglang.org/download/0.13.0/zig-linux-x86_64-0.13.0.tar.xz'
-        tar xf zig.tar.xz && mv zig-linux-x86_64-0.13.0 zig-0.13.0 && rm zig.tar.xz
     fi
 
     echo "Setup complete!"
