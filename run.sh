@@ -6,9 +6,9 @@ set -e
 cd "$(dirname "$0")"
 PROJECT_DIR="$(pwd)"
 PIXI_ENV="$PROJECT_DIR/.pixi/envs/default"
-ZIG_DIR="$PROJECT_DIR/zig-0.13.0"
+ZIG="$PROJECT_DIR/zig-0.13.0/zig"
 
-# Set environment
+# MKL environment configuration
 export MKLROOT="$PIXI_ENV"
 export LD_LIBRARY_PATH="$PIXI_ENV/lib:$LD_LIBRARY_PATH"
 export CPATH="$PIXI_ENV/include:${CPATH}"
@@ -17,99 +17,107 @@ export LD_PRELOAD="$PIXI_ENV/lib/libmkl_core.so:$PIXI_ENV/lib/libmkl_sequential.
 export MKL_NUM_THREADS=1
 export OMP_NUM_THREADS=1
 
-# Colors for output
-GREEN='\033[0;32m'
+# Output colors
 BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+GREEN='\033[0;32m'
+RESET='\033[0m'
 
-# Check if a cell exists in comma-separated list
-has_cell() {
-    echo ",$1," | grep -q ",$2,"
+# Check if command exists in comma-separated list
+has_command() {
+    [[ ",$1," == *",$2,"* ]]
 }
 
-# Show usage
 show_help() {
-    echo "Usage: $0 <commands>"
-    echo ""
-    echo "Commands (comma-separated):"
-    echo "  setup       - Download dependencies (Blaze, Zig)"
-    echo "  build       - Build all targets"
-    echo "  cpp-bench   - Run C++ benchmark"
-    echo "  zig-bench   - Run Zig benchmark"
-    echo "  compare     - Run both benchmarks"
-    echo "  cpp-example - Run C++ example"
-    echo "  zig-example - Run Zig example"
-    echo ""
-    echo "Examples:"
-    echo "  $0 setup,build,compare"
-    echo "  $0 setup,build,zig-bench"
+    cat <<EOF
+Usage: $0 <commands>
+
+Commands (comma-separated):
+  setup       - Download dependencies (Blaze, Zig)
+  build       - Build all targets
+  cpp-bench   - Run C++ benchmark
+  zig-bench   - Run Zig benchmark
+  compare     - Run both benchmarks
+  cpp-example - Run C++ example
+  zig-example - Run Zig example
+
+Examples:
+  $0 setup,build,compare
+  $0 setup,build,zig-bench
+EOF
 }
 
-COMMANDS="$1"
+COMMAND_LIST="$1"
 
-if [ -z "$COMMANDS" ] || [ "$COMMANDS" = "help" ] || [ "$COMMANDS" = "-h" ] || [ "$COMMANDS" = "--help" ]; then
+if [ -z "$COMMAND_LIST" ] || [ "$COMMAND_LIST" = "help" ] || [ "$COMMAND_LIST" = "-h" ] || [ "$COMMAND_LIST" = "--help" ]; then
     show_help
     exit 0
 fi
 
-if has_cell "$COMMANDS" "setup"; then
+# Executable paths
+CPP_BENCH="$PROJECT_DIR/build-cpp/blaze_bench"
+CPP_EXAMPLE="$PROJECT_DIR/build-cpp/blaze_example"
+ZIG_BENCH="$PROJECT_DIR/zig-blaze/zig-out/bin/blaze_zig_bench"
+ZIG_EXAMPLE="$PROJECT_DIR/zig-blaze/zig-out/bin/blaze_zig_example"
+
+if has_command "$COMMAND_LIST" "setup"; then
     echo "Installing pixi dependencies..."
     pixi install
 
-    echo "Downloading Blaze C++ library..."
     if [ ! -d "blaze" ]; then
+        echo "Downloading Blaze C++ library..."
         curl -L -o blaze.tar.gz 'https://github.com/live-clones/blaze/archive/refs/tags/v3.8.2.tar.gz'
         tar xzf blaze.tar.gz && mv blaze-3.8.2 blaze && rm blaze.tar.gz
     fi
 
-    echo "Downloading Zig 0.13.0..."
     if [ ! -d "zig-0.13.0" ]; then
+        echo "Downloading Zig 0.13.0..."
         curl -L -o zig.tar.xz 'https://ziglang.org/download/0.13.0/zig-linux-x86_64-0.13.0.tar.xz'
         tar xf zig.tar.xz && mv zig-linux-x86_64-0.13.0 zig-0.13.0 && rm zig.tar.xz
     fi
+
     echo "Setup complete!"
 fi
 
-if has_cell "$COMMANDS" "build"; then
+if has_command "$COMMAND_LIST" "build"; then
     echo "Building C++ benchmark..."
     pixi run -- bash -c 'mkdir -p build-cpp && cd build-cpp && cmake ../cpp-bench -G Ninja && ninja'
+
     echo ""
     echo "Building Zig benchmark..."
-    cd "$PROJECT_DIR/zig-blaze"
-    MKLROOT="$PIXI_ENV" "$ZIG_DIR/zig" build -Doptimize=ReleaseFast
-    cd "$PROJECT_DIR"
+    (cd "$PROJECT_DIR/zig-blaze" && "$ZIG" build -Doptimize=ReleaseFast)
+
     echo ""
     echo "Build complete!"
 fi
 
-if has_cell "$COMMANDS" "cpp-bench"; then
-    echo -e "${BLUE}Running C++ Blaze Benchmark...${NC}"
-    "$PROJECT_DIR/build-cpp/blaze_bench"
+if has_command "$COMMAND_LIST" "cpp-bench"; then
+    echo -e "${BLUE}Running C++ Blaze Benchmark...${RESET}"
+    "$CPP_BENCH"
 fi
 
-if has_cell "$COMMANDS" "zig-bench"; then
-    echo -e "${GREEN}Running Zig Blaze Benchmark...${NC}"
-    "$PROJECT_DIR/zig-blaze/zig-out/bin/blaze_zig_bench"
+if has_command "$COMMAND_LIST" "zig-bench"; then
+    echo -e "${GREEN}Running Zig Blaze Benchmark...${RESET}"
+    "$ZIG_BENCH"
 fi
 
-if has_cell "$COMMANDS" "cpp-example"; then
-    echo -e "${BLUE}Running C++ Blaze Example...${NC}"
-    "$PROJECT_DIR/build-cpp/blaze_example"
+if has_command "$COMMAND_LIST" "cpp-example"; then
+    echo -e "${BLUE}Running C++ Blaze Example...${RESET}"
+    "$CPP_EXAMPLE"
 fi
 
-if has_cell "$COMMANDS" "zig-example"; then
-    echo -e "${GREEN}Running Zig Blaze Example...${NC}"
-    "$PROJECT_DIR/zig-blaze/zig-out/bin/blaze_zig_example"
+if has_command "$COMMAND_LIST" "zig-example"; then
+    echo -e "${GREEN}Running Zig Blaze Example...${RESET}"
+    "$ZIG_EXAMPLE"
 fi
 
-if has_cell "$COMMANDS" "compare"; then
+if has_command "$COMMAND_LIST" "compare"; then
     echo "========================================"
     echo "  Blaze C++ vs Zig Benchmark Comparison"
     echo "========================================"
     echo ""
-    echo -e "${BLUE}=== C++ Blaze (with MKL) ===${NC}"
-    "$PROJECT_DIR/build-cpp/blaze_bench"
+    echo -e "${BLUE}=== C++ Blaze (with MKL) ===${RESET}"
+    "$CPP_BENCH"
     echo ""
-    echo -e "${GREEN}=== Zig Blaze (with MKL) ===${NC}"
-    "$PROJECT_DIR/zig-blaze/zig-out/bin/blaze_zig_bench"
+    echo -e "${GREEN}=== Zig Blaze (with MKL) ===${RESET}"
+    "$ZIG_BENCH"
 fi
