@@ -24,6 +24,9 @@ jobs:
       - name: Setup and build
         run: ./run.sh setup,build
 
+      - name: Run Zig example
+        run: ./run.sh zig-example
+
       - name: Run benchmarks
         run: |
           echo '## Benchmark Results' >> $GITHUB_STEP_SUMMARY

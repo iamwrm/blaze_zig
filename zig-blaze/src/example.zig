@@ -19,29 +19,17 @@ pub fn main() !void {
 
     // Create a 3x3 matrix
     const Mat = DynamicMatrix(f64, .RowMajor);
-    var A = try Mat.initWith(allocator, 3, 3, 0);
+    var A = try Mat.init(allocator, 3, 3);
     defer A.deinit();
-
-    // Fill with values
-    A.set(0, 0, 1.0);
-    A.set(0, 1, 2.0);
-    A.set(0, 2, 3.0);
-    A.set(1, 0, 4.0);
-    A.set(1, 1, 5.0);
-    A.set(1, 2, 6.0);
-    A.set(2, 0, 7.0);
-    A.set(2, 1, 8.0);
-    A.set(2, 2, 9.0);
+    @memcpy(A.data, &[_]f64{ 1, 2, 3, 4, 5, 6, 7, 8, 9 });
 
     try stdout.print("Matrix A:\n", .{});
     try A.print(stdout);
 
-    // Create identity-like matrix B
-    var B = try Mat.initWith(allocator, 3, 3, 0);
+    // Create diagonal matrix B
+    var B = try Mat.init(allocator, 3, 3);
     defer B.deinit();
-    B.set(0, 0, 1.0);
-    B.set(1, 1, 2.0);
-    B.set(2, 2, 3.0);
+    @memcpy(B.data, &[_]f64{ 1, 0, 0, 0, 2, 0, 0, 0, 3 });
 
     try stdout.print("\nMatrix B (diagonal):\n", .{});
     try B.print(stdout);
