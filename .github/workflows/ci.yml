@@ -21,5 +21,5 @@ jobs:
           cache: true
           locked: false
 
-      - name: Run blaze-zig-port build and benchmarks
-        run: bash blaze-zig-port/a.sh
+      - name: Run build and benchmarks
+        run: ./run.sh ci

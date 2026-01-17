@@ -1,142 +1,142 @@
-# Blaze-Zig
+# Blaze C++ to Zig Port
 
-A minimal port of the [Blaze C++ linear algebra library](https://bitbucket.org/blaze-lib/blaze) to Zig.
-
-## Overview
-
-This project provides:
-- C++ examples using the original Blaze library with MKL backend
-- A minimal Blaze-like linear algebra library implemented in pure Zig
-- Benchmarks comparing both implementations
-
-## Requirements
-
-All dependencies are managed by [Pixi](https://pixi.sh/). No system-level installation is required.
-
-Managed dependencies:
-- C++ compiler (GCC/Clang via cxx-compiler)
-- CMake and Ninja
-- Intel MKL (for BLAS/LAPACK)
-- Zig 0.13.x
-
-## Quick Start
-
-### Install Pixi
-
-```bash
-curl -fsSL https://pixi.sh/install.sh | bash
-source ~/.bashrc
-```
-
-### Build and Run
-
-```bash
-# Install dependencies
-pixi install
-
-# Clone Blaze library (C++ header-only)
-pixi run setup-blaze
-
-# Build and run C++ example
-pixi run run-cpp-example
-
-# Build and run Zig example
-cd zig && pixi run -- zig build run -Doptimize=ReleaseFast
-```
-
-### Run Benchmarks
-
-```bash
-# C++ benchmark (MKL-accelerated)
-pixi run benchmark-cpp
-
-# Zig benchmark (pure Zig)
-cd zig && pixi run -- zig build benchmark -Doptimize=ReleaseFast
-```
-
-### Run Tests
-
-```bash
-# Zig tests
-cd zig && pixi run -- zig build test
-```
+A minimal port of the [Blaze C++ linear algebra library](https://bitbucket.org/blaze-lib/blaze) to Zig, using Intel MKL for high-performance matrix operations.
 
 ## Project Structure
 
 ```
-blaze_zig/
-├── pixi.toml              # Pixi configuration with all dependencies
-├── cpp/                   # C++ Blaze examples
+blaze-zig-port/
+├── pixi.toml               # Package manager configuration
+├── activate.sh             # MKL environment setup
+├── run.sh                  # Run script for benchmarks
+├── blaze/                  # Original Blaze C++ library (header-only)
+├── cpp-bench/              # C++ benchmark and example
 │   ├── CMakeLists.txt
-│   ├── example.cpp        # Basic matrix/vector operations
-│   └── benchmark.cpp      # Matrix multiplication benchmark
-├── zig/                   # Zig implementation
+│   ├── main.cpp            # Benchmark
+│   └── example.cpp         # Example usage
+├── zig-blaze/              # Zig port
 │   ├── build.zig
 │   └── src/
-│       ├── blaze.zig      # Main module
-│       ├── matrix.zig     # DynamicMatrix implementation
-│       ├── vector.zig     # DynamicVector implementation
-│       ├── main.zig       # Example application
-│       └── benchmark.zig  # Benchmark application
-└── external/
-    └── blaze/             # Cloned Blaze C++ library (git ignored)
+│       ├── blaze.zig       # Core library
+│       ├── bench.zig       # Benchmark
+│       └── example.zig     # Example usage
+└── build-cpp/              # C++ build directory
 ```
 
-## API Reference
+## Features
 
-### Zig API
+The Zig port implements:
+- **DynamicMatrix**: Row-major and column-major dense matrices
+- **Matrix operations**: Multiplication (MKL CBLAS), addition, subtraction, scalar multiplication
+- **Element access**: get/set/ptr methods
+- **Utilities**: trace, clone, fillRandom, print
 
-```zig
-const blaze = @import("blaze");
+## Requirements
 
-// Dynamic Matrix
-const Matrix = blaze.DynamicMatrix(f64);
-var mat = try Matrix.init(allocator, rows, cols);
-defer mat.deinit();
+All dependencies are managed via [pixi](https://pixi.sh):
+- CMake, Ninja (build tools)
+- GCC (C++ compiler)
+- Intel MKL (BLAS/LAPACK)
+- Zig (downloaded separately due to conda-forge version issues)
 
-mat.set(0, 0, 1.0);
-const val = mat.get(0, 0);
+## Setup
 
-// Matrix operations
-var c = try Matrix.multiply(allocator, a, b);  // C = A * B
-var d = try Matrix.add(allocator, a, b);       // D = A + B
-var e = try Matrix.scale(allocator, a, 2.0);   // E = A * 2
+```bash
+# Install pixi
+curl -fsSL https://pixi.sh/install.sh | bash
 
-// Dynamic Vector
-const Vector = blaze.DynamicVector(f64);
-var vec = try Vector.fromArray(allocator, 3, .{1.0, 2.0, 3.0});
-defer vec.deinit();
+# Install dependencies
+cd blaze-zig-port
+pixi install
 
-const dot = try Vector.inner(v1, v2);  // Dot product
-var v3 = try Vector.add(allocator, v1, v2);
+# Build everything
+./run.sh build
+```
+
+## Usage
+
+### Run Benchmarks
+
+```bash
+# Run both C++ and Zig benchmarks
+./run.sh compare
+
+# Run individual benchmarks
+./run.sh cpp-bench
+./run.sh zig-bench
+```
+
+### Run Examples
+
+```bash
+./run.sh cpp-example
+./run.sh zig-example
 ```
 
 ## Benchmark Results
 
-Example benchmark results on a typical system:
+Single-threaded MKL benchmark on matrix multiplication:
 
-### C++ Blaze with MKL (single-threaded)
-| Size | Time (ms) | GFLOPS |
-|------|-----------|--------|
-| 64   | 0.012     | 45.37  |
-| 128  | 0.066     | 63.86  |
-| 256  | 0.484     | 69.26  |
-| 512  | 3.692     | 72.70  |
-| 1024 | 28.401    | 75.61  |
-| 2048 | 218.818   | 78.51  |
+### Double Precision (f64)
 
-### Pure Zig (single-threaded, tiled)
-| Size | Time (ms) | GFLOPS |
-|------|-----------|--------|
-| 64   | 0.316     | 1.66   |
-| 128  | 1.804     | 2.32   |
-| 256  | 13.637    | 2.46   |
-| 512  | 104.834   | 2.56   |
-| 1024 | 855.149   | 2.51   |
-| 2048 | 6693.162  | 2.57   |
+| Size | C++ Time (ms) | C++ GFLOPS | Zig Time (ms) | Zig GFLOPS |
+|------|---------------|------------|---------------|------------|
+| 64   | 0.010         | 53.6       | 0.019         | 27.3       |
+| 128  | 0.064         | 65.1       | 0.058         | 72.1       |
+| 256  | 0.472         | 71.1       | 0.475         | 70.6       |
+| 512  | 3.709         | 72.4       | 3.630         | 73.9       |
+| 1024 | 28.501        | 75.3       | 28.587        | 75.1       |
+| 2048 | 221.594       | 77.5       | 225.389       | 76.2       |
 
-Note: The Zig implementation uses a naive tiled algorithm. For production use, consider linking to optimized BLAS libraries.
+### Single Precision (f32)
+
+| Size | C++ Time (ms) | C++ GFLOPS | Zig Time (ms) | Zig GFLOPS |
+|------|---------------|------------|---------------|------------|
+| 64   | 0.011         | 49.5       | 0.010         | 51.5       |
+| 128  | 0.042         | 100.8      | 0.031         | 137.3      |
+| 256  | 0.232         | 144.7      | 0.235         | 142.9      |
+| 512  | 1.750         | 153.4      | 1.753         | 153.1      |
+| 1024 | 13.965        | 153.8      | 14.054        | 152.8      |
+| 2048 | 109.841       | 156.4      | 111.295       | 154.4      |
+
+Both implementations achieve similar performance since they both use MKL BLAS for the core computation.
+
+## Example Usage (Zig)
+
+```zig
+const std = @import("std");
+const blaze = @import("blaze");
+const DynamicMatrix = blaze.DynamicMatrix;
+
+pub fn main() !void {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
+
+    const Mat = DynamicMatrix(f64, .RowMajor);
+    
+    // Create 3x3 matrices
+    var A = try Mat.initWith(allocator, 3, 3, 0);
+    defer A.deinit();
+    
+    // Set values
+    A.set(0, 0, 1.0);
+    A.set(1, 1, 2.0);
+    A.set(2, 2, 3.0);
+    
+    var B = try Mat.initWith(allocator, 3, 3, 1.0);
+    defer B.deinit();
+    
+    // Matrix multiplication using MKL
+    var C = try Mat.multiply(allocator, &A, &B);
+    defer C.deinit();
+    
+    // Print result
+    try C.print(std.io.getStdOut().writer());
+}
+```
 
 ## License
 
-MIT License
+The original Blaze library is licensed under the BSD 3-Clause license.
+This port follows the same license.

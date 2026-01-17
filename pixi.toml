@@ -1,48 +1,34 @@
 [workspace]
-authors = ["Claude <noreply@anthropic.com>"]
-channels = ["conda-forge"]
-name = "blaze_zig"
-platforms = ["linux-64"]
+name = "blaze-zig-port"
 version = "0.1.0"
+description = "Porting Blaze C++ library to Zig"
+channels = ["conda-forge"]
+platforms = ["linux-64"]
 
 [dependencies]
 # Build tools
 cmake = ">=3.28"
 ninja = ">=1.11"
+make = ">=4.3"
 git = ">=2.40"
 
-# C++ compiler
+# C++ toolchain
 cxx-compiler = ">=1.7"
+libstdcxx-devel_linux-64 = ">=13"
 
-# Intel MKL for BLAS/LAPACK (C++)
+# Intel MKL for BLAS/LAPACK
 mkl = ">=2024"
 mkl-devel = ">=2024"
+mkl-include = ">=2024"
 
-# OpenBLAS for Zig (more compatible)
-openblas = ">=0.3"
+# Zig compiler
+zig = ">=0.13"
 
-# For downloading Zig
-curl = ">=8.0"
-xz = ">=5.4"
+[activation]
+scripts = ["activate.sh"]
 
 [tasks]
-# Setup Blaze (header-only library)
-setup-blaze = { cmd = "git clone --depth 1 https://bitbucket.org/blaze-lib/blaze.git external/blaze || true" }
-
-# Download Zig from official site (using 0.14.0 for better compatibility)
-setup-zig = { cmd = "bash -c 'test -f external/zig/zig || (mkdir -p external && curl -L https://ziglang.org/download/0.14.0/zig-linux-x86_64-0.14.0.tar.xz | tar -xJ -C external && mv external/zig-linux-x86_64-0.14.0 external/zig)'" }
-
-# C++ tasks
-configure-cpp = { cmd = "cmake -G Ninja -B build/cpp -S cpp -DCMAKE_BUILD_TYPE=Release", depends-on = ["setup-blaze"] }
-build-cpp = { cmd = "cmake --build build/cpp", depends-on = ["configure-cpp"] }
-run-cpp-example = { cmd = "./build/cpp/blaze_example", depends-on = ["build-cpp"] }
-benchmark-cpp = { cmd = "./build/cpp/blaze_benchmark", depends-on = ["build-cpp"] }
-
-# Zig tasks (use downloaded zig with pure Zig implementation)
-build-zig = { cmd = "../external/zig/zig build -Doptimize=ReleaseFast", cwd = "zig", depends-on = ["setup-zig"] }
-run-zig-example = { cmd = "./zig-out/bin/blaze_example", cwd = "zig", depends-on = ["build-zig"] }
-benchmark-zig = { cmd = "./zig-out/bin/blaze_benchmark", cwd = "zig", depends-on = ["build-zig"] }
-test-zig = { cmd = "../external/zig/zig build test", cwd = "zig", depends-on = ["setup-zig"] }
-
-# Combined tasks
-benchmark-all = { depends-on = ["benchmark-cpp", "benchmark-zig"] }
+build-cpp = "cmake --build build-cpp --parallel"
+run-cpp-bench = "./build-cpp/blaze_bench"
+build-zig = "zig build -Doptimize=ReleaseFast"
+run-zig-bench = "./zig-out/bin/blaze_zig_bench"
