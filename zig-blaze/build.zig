@@ -13,7 +13,7 @@ pub fn build(b: *std.Build) void {
 
     // Blaze Zig library
     const blaze_mod = b.addModule("blaze", .{
-        .root = b.path("src/blaze.zig"),
+        .root_source_file = b.path("src/blaze.zig"),
         .target = target,
         .optimize = optimize,
     });
