@@ -21,5 +21,12 @@ jobs:
           cache: true
           locked: false
 
-      - name: Run build and benchmarks
-        run: ./run.sh setup,build,zig-bench,compare
+      - name: Setup and build
+        run: ./run.sh setup,build
+
+      - name: Run benchmarks
+        run: |
+          echo '## Benchmark Results' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          ./run.sh compare | tee -a $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
