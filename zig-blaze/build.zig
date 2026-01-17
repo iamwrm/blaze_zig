@@ -13,7 +13,7 @@ pub fn build(b: *std.Build) void {
 
     // Blaze Zig library
     const blaze_mod = b.addModule("blaze", .{
-        .root_source_file = b.path("src/blaze.zig"),
+        .root = b.path("src/blaze.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -22,7 +22,7 @@ pub fn build(b: *std.Build) void {
     // Benchmark executable
     const bench_exe = b.addExecutable(.{
         .name = "blaze_zig_bench",
-        .root_source_file = b.path("src/bench.zig"),
+        .root = b.path("src/bench.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -55,7 +55,7 @@ pub fn build(b: *std.Build) void {
     // Example executable
     const example_exe = b.addExecutable(.{
         .name = "blaze_zig_example",
-        .root_source_file = b.path("src/example.zig"),
+        .root = b.path("src/example.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -86,7 +86,7 @@ pub fn build(b: *std.Build) void {
 
     // Tests
     const tests = b.addTest(.{
-        .root_source_file = b.path("src/blaze.zig"),
+        .root = b.path("src/blaze.zig"),
         .target = target,
         .optimize = optimize,
     });
