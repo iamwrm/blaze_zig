@@ -34,7 +34,7 @@ pub fn Matrix(comptime T: type, comptime Rows: usize, comptime Cols: usize) type
 
         /// Create a new matrix with uninitialized data
         pub fn init(allocator: std.mem.Allocator) !Self {
-            const data = try allocator.alignedAlloc(T, 64, Rows * Cols);
+            const data = try allocator.alignedAlloc(T, @enumFromInt(6), Rows * Cols); // 64-byte alignment (2^6 = 64)
             return .{
                 .data = @ptrCast(data.ptr),
                 .allocator = allocator,

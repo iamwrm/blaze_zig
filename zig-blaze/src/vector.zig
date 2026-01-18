@@ -32,7 +32,7 @@ pub fn Vector(comptime T: type, comptime Size: usize) type {
 
         /// Create a new vector with uninitialized data
         pub fn init(allocator: std.mem.Allocator) !Self {
-            const data = try allocator.alignedAlloc(T, 64, Size);
+            const data = try allocator.alignedAlloc(T, @enumFromInt(6), Size); // 64-byte alignment (2^6 = 64)
             return .{
                 .data = @ptrCast(data.ptr),
                 .allocator = allocator,
