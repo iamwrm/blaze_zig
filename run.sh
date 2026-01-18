@@ -17,6 +17,11 @@ export LD_PRELOAD="$PIXI_ENV/lib/libmkl_core.so:$PIXI_ENV/lib/libmkl_sequential.
 export MKL_NUM_THREADS=1
 export OMP_NUM_THREADS=1
 
+# Unset proxy environment variables that can cause issues with Zig
+unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY
+unset YARN_HTTP_PROXY YARN_HTTPS_PROXY
+unset GLOBAL_AGENT_HTTP_PROXY GLOBAL_AGENT_HTTPS_PROXY
+
 # Output colors
 BLUE='\033[0;34m'
 GREEN='\033[0;32m'
