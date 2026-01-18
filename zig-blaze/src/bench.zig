@@ -114,11 +114,8 @@ pub fn main() !void {
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
-    // Zig 0.15 I/O: use buffered stdout with explicit flush
-    var stdout_buffer: [4096]u8 = undefined;
-    var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
-    const stdout = &stdout_writer.interface;
-    defer stdout.flush() catch {};
+    // Use std.io API for Zig 0.14/0.15 compatibility
+    const stdout = std.io.getStdOut().writer();
 
     try stdout.print("========================================\n", .{});
     try stdout.print("   Blaze-Zig Matrix Multiplication\n", .{});
