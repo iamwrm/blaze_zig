@@ -41,9 +41,9 @@ pub fn Vector(comptime T: type, comptime Size: usize) type {
 
         /// Create a new vector initialized to a specific value
         pub fn initWithValue(allocator: std.mem.Allocator, value: T) !Self {
-            var self = try init(allocator);
-            @memset(self.data, value);
-            return self;
+            const result = try init(allocator);
+            @memset(result.data, value);
+            return result;
         }
 
         /// Create a vector from an existing array (no allocation, does not own memory)
@@ -57,8 +57,8 @@ pub fn Vector(comptime T: type, comptime Size: usize) type {
         /// Free the vector memory
         pub fn deinit(self: *Self) void {
             if (self.allocator) |alloc| {
-                const slice: []align(64) T = @as([*]align(64) T, @ptrCast(self.data))[0..Size];
-                alloc.free(slice);
+                const mem_slice: []align(64) T = @as([*]align(64) T, @ptrCast(self.data))[0..Size];
+                alloc.free(mem_slice);
             }
             self.* = undefined;
         }
@@ -212,7 +212,7 @@ pub fn Vector(comptime T: type, comptime Size: usize) type {
 
         /// Clone the vector
         pub fn clone(self: Self, allocator: std.mem.Allocator) !Self {
-            var new_vec = try init(allocator);
+            const new_vec = try init(allocator);
             @memcpy(new_vec.data, self.data);
             return new_vec;
         }

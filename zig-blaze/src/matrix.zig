@@ -43,20 +43,20 @@ pub fn Matrix(comptime T: type, comptime Rows: usize, comptime Cols: usize) type
 
         /// Create a new matrix initialized to a specific value
         pub fn initWithValue(allocator: std.mem.Allocator, value: T) !Self {
-            var self = try init(allocator);
-            @memset(self.data, value);
-            return self;
+            const result = try init(allocator);
+            @memset(result.data, value);
+            return result;
         }
 
         /// Create an identity matrix
         pub fn initIdentity(allocator: std.mem.Allocator) !Self {
-            var self = try init(allocator);
-            @memset(self.data, 0);
+            const result = try init(allocator);
+            @memset(result.data, 0);
             const min_dim = @min(Rows, Cols);
             for (0..min_dim) |i| {
-                self.data[i * Cols + i] = 1;
+                result.data[i * Cols + i] = 1;
             }
-            return self;
+            return result;
         }
 
         /// Create a matrix from an existing array (no allocation, does not own memory)
@@ -70,8 +70,8 @@ pub fn Matrix(comptime T: type, comptime Rows: usize, comptime Cols: usize) type
         /// Free the matrix memory
         pub fn deinit(self: *Self) void {
             if (self.allocator) |alloc| {
-                const slice: []align(64) T = @as([*]align(64) T, @ptrCast(self.data))[0 .. Rows * Cols];
-                alloc.free(slice);
+                const mem_slice: []align(64) T = @as([*]align(64) T, @ptrCast(self.data))[0 .. Rows * Cols];
+                alloc.free(mem_slice);
             }
             self.* = undefined;
         }
@@ -90,19 +90,19 @@ pub fn Matrix(comptime T: type, comptime Rows: usize, comptime Cols: usize) type
             return @ptrCast(self.data);
         }
 
-        /// Get element at (row, col)
-        pub fn at(self: Self, row: usize, col: usize) T {
-            return self.data[row * Cols + col];
+        /// Get element at (r, c)
+        pub fn at(self: Self, r: usize, c: usize) T {
+            return self.data[r * Cols + c];
         }
 
-        /// Set element at (row, col)
-        pub fn set(self: *Self, row: usize, col: usize, value: T) void {
-            self.data[row * Cols + col] = value;
+        /// Set element at (r, c)
+        pub fn set(self: *Self, r: usize, c: usize, value: T) void {
+            self.data[r * Cols + c] = value;
         }
 
-        /// Get mutable pointer to element at (row, col)
-        pub fn ptrAt(self: *Self, row: usize, col: usize) *T {
-            return &self.data[row * Cols + col];
+        /// Get mutable pointer to element at (r, c)
+        pub fn ptrAt(self: *Self, r: usize, c: usize) *T {
+            return &self.data[r * Cols + c];
         }
 
         /// Get a slice of the underlying data
@@ -327,7 +327,7 @@ pub fn Matrix(comptime T: type, comptime Rows: usize, comptime Cols: usize) type
 
         /// Clone the matrix
         pub fn clone(self: Self, allocator: std.mem.Allocator) !Self {
-            var new_matrix = try init(allocator);
+            const new_matrix = try init(allocator);
             @memcpy(new_matrix.data, self.data);
             return new_matrix;
         }
