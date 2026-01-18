@@ -6,8 +6,23 @@ set -e
 cd "$(dirname "$0")"
 PROJECT_DIR="$(pwd)"
 PIXI_ENV="$PROJECT_DIR/.pixi/envs/default"
-# Use ZIG_PATH env var if set (for CI with custom Zig version), otherwise use pixi's zig
-ZIG="${ZIG_PATH:-$PIXI_ENV/bin/zig}"
+
+# Zig 0.16.0-dev configuration (fixes gVisor compatibility)
+ZIG_VERSION="0.16.0-dev.2193+fc517bd01"
+ZIG_DIR="$PROJECT_DIR/.zig"
+ZIG="$ZIG_DIR/zig-x86_64-linux-$ZIG_VERSION/zig"
+
+# Function to download Zig 0.16.0-dev
+download_zig() {
+    if [ ! -f "$ZIG" ]; then
+        echo "Downloading Zig $ZIG_VERSION..."
+        mkdir -p "$ZIG_DIR"
+        curl -sL "https://ziglang.org/builds/zig-x86_64-linux-$ZIG_VERSION.tar.xz" -o "$ZIG_DIR/zig.tar.xz"
+        tar -xf "$ZIG_DIR/zig.tar.xz" -C "$ZIG_DIR"
+        rm "$ZIG_DIR/zig.tar.xz"
+        echo "Zig $ZIG_VERSION installed to $ZIG_DIR"
+    fi
+}
 
 # MKL environment configuration
 export MKLROOT="$PIXI_ENV"
@@ -67,6 +82,9 @@ ZIG_BENCH="$PROJECT_DIR/zig-blaze/zig-out/bin/blaze_zig_bench"
 ZIG_EXAMPLE="$PROJECT_DIR/zig-blaze/zig-out/bin/blaze_zig_example"
 
 if has_command "setup"; then
+    # Download Zig 0.16.0-dev if not present
+    download_zig
+
     # Build Blaze package if not already built
     if ! ls local-channel/noarch/blaze-*.conda 1>/dev/null 2>&1; then
         echo "Building Blaze package with rattler-build..."

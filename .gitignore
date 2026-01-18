@@ -6,6 +6,9 @@ zig-blaze/.zig-cache/
 # Cache directories
 .cache/
 
+# Downloaded Zig compiler
+.zig/
+
 # Local channel (built at setup time)
 local-channel/
 
