@@ -60,6 +60,7 @@ Commands (comma-separated):
   compare     - Run both benchmarks
   cpp-example - Run C++ example
   zig-example - Run Zig example
+  zig-test    - Run Zig unit tests
   clean       - Remove build artifacts
 
 Examples:
@@ -137,6 +138,11 @@ fi
 if has_command "zig-example"; then
     echo -e "${GREEN}Running Zig Blaze Example...${RESET}"
     "$ZIG_EXAMPLE"
+fi
+
+if has_command "zig-test"; then
+    echo -e "${GREEN}Running Zig Unit Tests...${RESET}"
+    (cd "$PROJECT_DIR/zig-blaze" && "$ZIG" build test)
 fi
 
 if has_command "compare"; then
