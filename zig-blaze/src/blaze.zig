@@ -1,15 +1,83 @@
-//! Blaze-Zig: A minimal port of the Blaze C++ library to Zig
-//! 
-//! This library provides high-performance dense matrix operations
-//! backed by Intel MKL BLAS.
+//! Blaze-Zig: A Zig port of the Blaze C++ linear algebra library
+//!
+//! This library provides high-performance dense matrix and vector operations
+//! backed by Intel MKL BLAS with SIMD fallbacks for small operations.
+//!
+//! ## Features
+//!
+//! - Fixed-size vectors and matrices with compile-time dimension checking
+//! - Dynamic matrices for runtime-sized operations
+//! - Expression system for lazy evaluation and kernel optimization
+//! - BLAS Level 1, 2, and 3 operations via MKL
+//! - SIMD-optimized kernels for small/medium sizes
+//!
+//! ## Quick Start
+//!
+//! ```zig
+//! const blaze = @import("blaze");
+//! const Vector = blaze.Vector;
+//! const Matrix = blaze.Matrix;
+//!
+//! // Create vectors
+//! var x = try Vector(f64, 100).initWithValue(allocator, 1.0);
+//! defer x.deinit();
+//!
+//! var y = try Vector(f64, 100).initWithValue(allocator, 2.0);
+//! defer y.deinit();
+//!
+//! // Dot product
+//! const dot_result = x.dot(y);
+//!
+//! // Create matrices
+//! var A = try Matrix(f64, 100, 100).initIdentity(allocator);
+//! defer A.deinit();
+//!
+//! // Matrix-vector multiply
+//! var result = try Vector(f64, 100).init(allocator);
+//! defer result.deinit();
+//! A.mulVecInto(x, &result);
+//! ```
 
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 
-/// CBLAS bindings for MKL
-pub const cblas = @cImport({
+// =============================================================================
+// Module Exports
+// =============================================================================
+
+/// CBLAS bindings for MKL (raw @cImport kept for DynamicMatrix compatibility)
+const cblas_raw = @cImport({
     @cInclude("mkl_cblas.h");
 });
+
+/// CBLAS bindings wrapper module
+pub const cblas = @import("blas/cblas.zig");
+
+/// SIMD kernels for small/medium operations
+pub const simd = @import("kernels/simd.zig");
+
+/// Fixed-size vector type
+pub const vector = @import("vector.zig");
+pub const Vector = vector.Vector;
+pub const VectorF64 = vector.VectorF64;
+pub const VectorF32 = vector.VectorF32;
+
+/// Fixed-size matrix type
+pub const matrix = @import("matrix.zig");
+pub const Matrix = matrix.Matrix;
+pub const MatrixF64 = matrix.MatrixF64;
+pub const MatrixF32 = matrix.MatrixF32;
+
+/// Expression system for lazy evaluation
+pub const expr = @import("expr.zig");
+pub const VectorExpr = expr.VectorExpr;
+pub const MatrixExpr = expr.MatrixExpr;
+pub const vectorExpr = expr.vectorExpr;
+pub const matrixExpr = expr.matrixExpr;
+
+// =============================================================================
+// Dynamic Matrix (Original Implementation)
+// =============================================================================
 
 /// Matrix storage order
 pub const StorageOrder = enum {
@@ -131,15 +199,15 @@ pub fn DynamicMatrix(comptime T: type, comptime order: StorageOrder) type {
             var C = try initWith(allocator, A.rows, B.cols, 0);
 
             const layout = switch (order) {
-                .RowMajor => cblas.CblasRowMajor,
-                .ColumnMajor => cblas.CblasColMajor,
+                .RowMajor => cblas_raw.CblasRowMajor,
+                .ColumnMajor => cblas_raw.CblasColMajor,
             };
 
             if (T == f64) {
-                cblas.cblas_dgemm(
+                cblas_raw.cblas_dgemm(
                     layout,
-                    cblas.CblasNoTrans,
-                    cblas.CblasNoTrans,
+                    cblas_raw.CblasNoTrans,
+                    cblas_raw.CblasNoTrans,
                     @intCast(A.rows), // M
                     @intCast(B.cols), // N
                     @intCast(A.cols), // K
@@ -153,10 +221,10 @@ pub fn DynamicMatrix(comptime T: type, comptime order: StorageOrder) type {
                     @intCast(C.leadingDimension()),
                 );
             } else if (T == f32) {
-                cblas.cblas_sgemm(
+                cblas_raw.cblas_sgemm(
                     layout,
-                    cblas.CblasNoTrans,
-                    cblas.CblasNoTrans,
+                    cblas_raw.CblasNoTrans,
+                    cblas_raw.CblasNoTrans,
                     @intCast(A.rows), // M
                     @intCast(B.cols), // N
                     @intCast(A.cols), // K
@@ -186,15 +254,15 @@ pub fn DynamicMatrix(comptime T: type, comptime order: StorageOrder) type {
             }
 
             const layout = switch (order) {
-                .RowMajor => cblas.CblasRowMajor,
-                .ColumnMajor => cblas.CblasColMajor,
+                .RowMajor => cblas_raw.CblasRowMajor,
+                .ColumnMajor => cblas_raw.CblasColMajor,
             };
 
             if (T == f64) {
-                cblas.cblas_dgemm(
+                cblas_raw.cblas_dgemm(
                     layout,
-                    cblas.CblasNoTrans,
-                    cblas.CblasNoTrans,
+                    cblas_raw.CblasNoTrans,
+                    cblas_raw.CblasNoTrans,
                     @intCast(A.rows),
                     @intCast(B.cols),
                     @intCast(A.cols),
@@ -208,10 +276,10 @@ pub fn DynamicMatrix(comptime T: type, comptime order: StorageOrder) type {
                     @intCast(self.leadingDimension()),
                 );
             } else if (T == f32) {
-                cblas.cblas_sgemm(
+                cblas_raw.cblas_sgemm(
                     layout,
-                    cblas.CblasNoTrans,
-                    cblas.CblasNoTrans,
+                    cblas_raw.CblasNoTrans,
+                    cblas_raw.CblasNoTrans,
                     @intCast(A.rows),
                     @intCast(B.cols),
                     @intCast(A.cols),
@@ -319,4 +387,66 @@ test "DynamicMatrix trace" {
     A.set(2, 2, 3.0);
 
     try std.testing.expectEqual(@as(f64, 6.0), A.trace());
+}
+
+test "DynamicMatrix multiply" {
+    const allocator = std.testing.allocator;
+
+    // A = [[1, 2], [3, 4]]
+    var A = try DynamicMatrixF64.initWith(allocator, 2, 2, 0);
+    defer A.deinit();
+    A.set(0, 0, 1.0);
+    A.set(0, 1, 2.0);
+    A.set(1, 0, 3.0);
+    A.set(1, 1, 4.0);
+
+    // B = [[1, 0], [0, 1]] (identity)
+    var B = try DynamicMatrixF64.initWith(allocator, 2, 2, 0);
+    defer B.deinit();
+    B.set(0, 0, 1.0);
+    B.set(1, 1, 1.0);
+
+    // C = A * B = A
+    var C = try DynamicMatrixF64.multiply(allocator, &A, &B);
+    defer C.deinit();
+
+    try std.testing.expectApproxEqAbs(@as(f64, 1.0), C.get(0, 0), 1e-10);
+    try std.testing.expectApproxEqAbs(@as(f64, 2.0), C.get(0, 1), 1e-10);
+    try std.testing.expectApproxEqAbs(@as(f64, 3.0), C.get(1, 0), 1e-10);
+    try std.testing.expectApproxEqAbs(@as(f64, 4.0), C.get(1, 1), 1e-10);
+}
+
+test "DynamicMatrix add" {
+    const allocator = std.testing.allocator;
+
+    var A = try DynamicMatrixF64.initWith(allocator, 2, 2, 1.0);
+    defer A.deinit();
+    var B = try DynamicMatrixF64.initWith(allocator, 2, 2, 2.0);
+    defer B.deinit();
+
+    var C = try DynamicMatrixF64.add(allocator, &A, &B);
+    defer C.deinit();
+
+    try std.testing.expectApproxEqAbs(@as(f64, 3.0), C.get(0, 0), 1e-10);
+}
+
+test "DynamicMatrix scale" {
+    const allocator = std.testing.allocator;
+
+    var A = try DynamicMatrixF64.initWith(allocator, 2, 2, 2.0);
+    defer A.deinit();
+
+    var B = try DynamicMatrixF64.scale(allocator, &A, 3.0);
+    defer B.deinit();
+
+    try std.testing.expectApproxEqAbs(@as(f64, 6.0), B.get(0, 0), 1e-10);
+}
+
+// Import tests from submodules
+test {
+    _ = @import("blas/cblas.zig");
+    _ = @import("kernels/simd.zig");
+    _ = @import("vector.zig");
+    _ = @import("matrix.zig");
+    _ = @import("expr.zig");
 }

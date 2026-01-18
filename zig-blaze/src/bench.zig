@@ -9,40 +9,18 @@ const Allocator = std.mem.Allocator;
 
 /// High-resolution timer for benchmarking
 const Timer = struct {
-    start_time: i128,
+    start_instant: std.time.Instant,
 
     pub fn start() Timer {
-        return .{ .start_time = std.time.nanoTimestamp() };
+        return .{ .start_instant = std.time.Instant.now() catch unreachable };
     }
 
     pub fn elapsedMs(self: Timer) f64 {
-        const end_time = std.time.nanoTimestamp();
-        const elapsed_ns = end_time - self.start_time;
+        const end_instant = std.time.Instant.now() catch unreachable;
+        const elapsed_ns = end_instant.since(self.start_instant);
         return @as(f64, @floatFromInt(elapsed_ns)) / 1_000_000.0;
     }
 };
-
-/// Benchmark a function with warmup and timed runs
-fn benchmark(
-    comptime func: anytype,
-    args: anytype,
-    warmup_runs: usize,
-    timed_runs: usize,
-) f64 {
-    // Warmup
-    for (0..warmup_runs) |_| {
-        _ = @call(.auto, func, args);
-    }
-
-    // Timed runs
-    const timer = Timer.start();
-    for (0..timed_runs) |_| {
-        _ = @call(.auto, func, args);
-    }
-    const total_ms = timer.elapsedMs();
-
-    return total_ms / @as(f64, @floatFromInt(timed_runs));
-}
 
 /// Calculate GFLOPS for matrix multiplication
 fn calculateGflops(M: usize, N: usize, K: usize, time_ms: f64) f64 {
@@ -54,12 +32,7 @@ fn calculateGflops(M: usize, N: usize, K: usize, time_ms: f64) f64 {
 }
 
 /// Run matrix multiplication benchmark for a given type and size
-fn runBenchmark(
-    comptime T: type,
-    allocator: Allocator,
-    size: usize,
-    writer: anytype,
-) !void {
+fn runBenchmark(comptime T: type, allocator: Allocator, size: usize) !void {
     const Matrix = DynamicMatrix(T, .RowMajor);
 
     // Create matrices
@@ -105,7 +78,7 @@ fn runBenchmark(
     }
 
     // Print tabular row
-    try writer.print("{d:<8} {d:>10.3} {d:>10.1} {d:>13.1} {d:>12.3}\n", .{ size, avg_ms, gflops, memory_mb, checksum });
+    std.debug.print("{d:<8} {d:>10.3} {d:>10.1} {d:>13.1} {d:>12.3}\n", .{ size, avg_ms, gflops, memory_mb, checksum });
 }
 
 pub fn main() !void {
@@ -114,31 +87,27 @@ pub fn main() !void {
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
-    // Zig 0.15 I/O: use buffered stdout with explicit flush
-    var stdout_buffer: [4096]u8 = undefined;
-    var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
-    const stdout = &stdout_writer.interface;
-    defer stdout.flush() catch {};
+    const print = std.debug.print;
 
-    try stdout.print("========================================\n", .{});
-    try stdout.print("   Blaze-Zig Matrix Multiplication\n", .{});
-    try stdout.print("   Single-threaded MKL Benchmark\n", .{});
-    try stdout.print("========================================\n", .{});
+    print("========================================\n", .{});
+    print("   Blaze-Zig Matrix Multiplication\n", .{});
+    print("   Single-threaded MKL Benchmark\n", .{});
+    print("========================================\n", .{});
 
     // Test different matrix sizes
     const sizes = [_]usize{ 256, 1024, 4096 };
 
     // Double precision tests
-    try stdout.print("\n=== Double Precision (f64) ===\n", .{});
-    try stdout.print("{s:<8} {s:>10} {s:>10} {s:>13} {s:>12}\n", .{ "Size", "Time(ms)", "GFLOPS", "Memory(MB)", "Checksum" });
+    print("\n=== Double Precision (f64) ===\n", .{});
+    print("{s:<8} {s:>10} {s:>10} {s:>13} {s:>12}\n", .{ "Size", "Time(ms)", "GFLOPS", "Memory(MB)", "Checksum" });
     for (sizes) |size| {
-        try runBenchmark(f64, allocator, size, stdout);
+        try runBenchmark(f64, allocator, size);
     }
 
     // Single precision tests
-    try stdout.print("\n=== Single Precision (f32) ===\n", .{});
-    try stdout.print("{s:<8} {s:>10} {s:>10} {s:>13} {s:>12}\n", .{ "Size", "Time(ms)", "GFLOPS", "Memory(MB)", "Checksum" });
+    print("\n=== Single Precision (f32) ===\n", .{});
+    print("{s:<8} {s:>10} {s:>10} {s:>13} {s:>12}\n", .{ "Size", "Time(ms)", "GFLOPS", "Memory(MB)", "Checksum" });
     for (sizes) |size| {
-        try runBenchmark(f32, allocator, size, stdout);
+        try runBenchmark(f32, allocator, size);
     }
 }

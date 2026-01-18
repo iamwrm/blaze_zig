@@ -1,19 +1,19 @@
-# Pixi environments
-.pixi/*
-!.pixi/config.toml
-bootstrap/.pixi/
-bootstrap/pixi.lock
-
 # Build artifacts
-build/
 build-cpp/
-
-# Zig build artifacts
-zig-blaze/.zig-cache/
 zig-blaze/zig-out/
+zig-blaze/.zig-cache/
 
-# Local conda channel (built at setup time)
+# Cache directories
+.cache/
+
+# Downloaded Zig compiler
+.zig/
+
+# Local channel (built at setup time)
 local-channel/
+
+# Pixi environment
+.pixi/
 
 # Editor files
 *.swp
@@ -21,7 +21,3 @@ local-channel/
 *~
 .vscode/
 .idea/
-
-# OS files
-.DS_Store
-Thumbs.db

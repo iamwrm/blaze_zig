@@ -4,18 +4,27 @@ const std = @import("std");
 const blaze = @import("blaze");
 const DynamicMatrix = blaze.DynamicMatrix;
 
+fn printMatrix(mat: anytype) void {
+    const print = std.debug.print;
+    print("Matrix({}x{}):\n", .{ mat.rows, mat.cols });
+    for (0..mat.rows) |i| {
+        print("  [", .{});
+        for (0..mat.cols) |j| {
+            if (j > 0) print(", ", .{});
+            print("{d:.4}", .{mat.get(i, j)});
+        }
+        print("]\n", .{});
+    }
+}
+
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
-    // Zig 0.15 I/O: use buffered stdout with explicit flush
-    var stdout_buffer: [4096]u8 = undefined;
-    var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
-    const stdout = &stdout_writer.interface;
-    defer stdout.flush() catch {};
+    const print = std.debug.print;
 
-    try stdout.print("=== Blaze-Zig Example ===\n\n", .{});
+    print("=== Blaze-Zig Example ===\n\n", .{});
 
     // Create a 3x3 matrix
     const Mat = DynamicMatrix(f64, .RowMajor);
@@ -23,41 +32,41 @@ pub fn main() !void {
     defer A.deinit();
     @memcpy(A.data, &[_]f64{ 1, 2, 3, 4, 5, 6, 7, 8, 9 });
 
-    try stdout.print("Matrix A:\n", .{});
-    try A.print(stdout);
+    print("Matrix A:\n", .{});
+    printMatrix(&A);
 
     // Create diagonal matrix B
     var B = try Mat.init(allocator, 3, 3);
     defer B.deinit();
     @memcpy(B.data, &[_]f64{ 1, 0, 0, 0, 2, 0, 0, 0, 3 });
 
-    try stdout.print("\nMatrix B (diagonal):\n", .{});
-    try B.print(stdout);
+    print("\nMatrix B (diagonal):\n", .{});
+    printMatrix(&B);
 
     // Matrix multiplication using MKL
     var C = try Mat.multiply(allocator, &A, &B);
     defer C.deinit();
 
-    try stdout.print("\nC = A * B:\n", .{});
-    try C.print(stdout);
+    print("\nC = A * B:\n", .{});
+    printMatrix(&C);
 
     // Matrix addition
     var D = try Mat.add(allocator, &A, &C);
     defer D.deinit();
 
-    try stdout.print("\nD = A + C:\n", .{});
-    try D.print(stdout);
+    print("\nD = A + C:\n", .{});
+    printMatrix(&D);
 
     // Scalar multiplication
     var E = try Mat.scale(allocator, &A, 0.5);
     defer E.deinit();
 
-    try stdout.print("\nE = 0.5 * A:\n", .{});
-    try E.print(stdout);
+    print("\nE = 0.5 * A:\n", .{});
+    printMatrix(&E);
 
     // Trace
-    try stdout.print("\nTrace of A: {d:.4}\n", .{A.trace()});
-    try stdout.print("Trace of C: {d:.4}\n", .{C.trace()});
+    print("\nTrace of A: {d:.4}\n", .{A.trace()});
+    print("Trace of C: {d:.4}\n", .{C.trace()});
 
-    try stdout.print("\n=== Example Complete ===\n", .{});
+    print("\n=== Example Complete ===\n", .{});
 }
