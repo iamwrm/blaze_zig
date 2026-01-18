@@ -6,7 +6,8 @@ set -e
 cd "$(dirname "$0")"
 PROJECT_DIR="$(pwd)"
 PIXI_ENV="$PROJECT_DIR/.pixi/envs/default"
-ZIG="$PIXI_ENV/bin/zig"
+# Use ZIG_PATH env var if set (for CI with custom Zig version), otherwise use pixi's zig
+ZIG="${ZIG_PATH:-$PIXI_ENV/bin/zig}"
 
 # MKL environment configuration
 export MKLROOT="$PIXI_ENV"

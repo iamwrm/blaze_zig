@@ -4,15 +4,15 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
-    // Get MKL path from environment
-    const mkl_root = std.posix.getenv("MKLROOT") orelse "/usr";
+    // Get MKL path from environment (Zig 0.16+ API)
+    const mkl_root = b.graph.environ_map.get("MKLROOT") orelse "/usr";
 
     // MKL paths
     const mkl_include = b.fmt("{s}/include", .{mkl_root});
     const mkl_lib = b.fmt("{s}/lib", .{mkl_root});
 
     // Blaze Zig library module
-    const blaze_mod = b.addModule("blaze", .{
+    const blaze_mod = b.createModule(.{
         .root_source_file = b.path("src/blaze.zig"),
         .target = target,
         .optimize = optimize,
@@ -20,61 +20,49 @@ pub fn build(b: *std.Build) void {
     blaze_mod.addIncludePath(.{ .cwd_relative = mkl_include });
 
     // Benchmark executable
-    const bench_exe = b.addExecutable(.{
-        .name = "blaze_zig_bench",
+    const bench_mod = b.createModule(.{
         .root_source_file = b.path("src/bench.zig"),
         .target = target,
         .optimize = optimize,
+        .link_libc = true,
     });
+    bench_mod.addImport("blaze", blaze_mod);
+    bench_mod.addIncludePath(.{ .cwd_relative = mkl_include });
+    bench_mod.addLibraryPath(.{ .cwd_relative = mkl_lib });
+    bench_mod.linkSystemLibrary("mkl_intel_lp64", .{});
+    bench_mod.linkSystemLibrary("mkl_sequential", .{});
+    bench_mod.linkSystemLibrary("mkl_core", .{});
+    bench_mod.linkSystemLibrary("pthread", .{});
+    bench_mod.linkSystemLibrary("m", .{});
+    bench_mod.linkSystemLibrary("dl", .{});
 
-    bench_exe.root_module.addImport("blaze", blaze_mod);
-
-    // Add MKL include path to benchmark too
-    bench_exe.addIncludePath(.{ .cwd_relative = mkl_include });
-
-    // Add MKL library path
-    bench_exe.addLibraryPath(.{ .cwd_relative = mkl_lib });
-    bench_exe.addRPath(.{ .cwd_relative = mkl_lib });
-
-    // Link MKL libraries in correct order (sequential, lp64)
-    // MKL requires specific link order and may need --start-group/--end-group
-    bench_exe.linkSystemLibrary("mkl_intel_lp64");
-    bench_exe.linkSystemLibrary("mkl_sequential");
-    bench_exe.linkSystemLibrary("mkl_core");
-    // Some systems need to link these again for circular dependencies
-    bench_exe.linkSystemLibrary("mkl_intel_lp64");
-    bench_exe.linkSystemLibrary("mkl_sequential");
-    bench_exe.linkSystemLibrary("mkl_core");
-    bench_exe.linkSystemLibrary("pthread");
-    bench_exe.linkSystemLibrary("m");
-    bench_exe.linkSystemLibrary("dl");
-    bench_exe.linkLibC();
-
+    const bench_exe = b.addExecutable(.{
+        .name = "blaze_zig_bench",
+        .root_module = bench_mod,
+    });
     b.installArtifact(bench_exe);
 
     // Example executable
-    const example_exe = b.addExecutable(.{
-        .name = "blaze_zig_example",
+    const example_mod = b.createModule(.{
         .root_source_file = b.path("src/example.zig"),
         .target = target,
         .optimize = optimize,
+        .link_libc = true,
     });
+    example_mod.addImport("blaze", blaze_mod);
+    example_mod.addIncludePath(.{ .cwd_relative = mkl_include });
+    example_mod.addLibraryPath(.{ .cwd_relative = mkl_lib });
+    example_mod.linkSystemLibrary("mkl_intel_lp64", .{});
+    example_mod.linkSystemLibrary("mkl_sequential", .{});
+    example_mod.linkSystemLibrary("mkl_core", .{});
+    example_mod.linkSystemLibrary("pthread", .{});
+    example_mod.linkSystemLibrary("m", .{});
+    example_mod.linkSystemLibrary("dl", .{});
 
-    example_exe.root_module.addImport("blaze", blaze_mod);
-    example_exe.addIncludePath(.{ .cwd_relative = mkl_include });
-    example_exe.addLibraryPath(.{ .cwd_relative = mkl_lib });
-    example_exe.addRPath(.{ .cwd_relative = mkl_lib });
-    example_exe.linkSystemLibrary("mkl_intel_lp64");
-    example_exe.linkSystemLibrary("mkl_sequential");
-    example_exe.linkSystemLibrary("mkl_core");
-    example_exe.linkSystemLibrary("mkl_intel_lp64");
-    example_exe.linkSystemLibrary("mkl_sequential");
-    example_exe.linkSystemLibrary("mkl_core");
-    example_exe.linkSystemLibrary("pthread");
-    example_exe.linkSystemLibrary("m");
-    example_exe.linkSystemLibrary("dl");
-    example_exe.linkLibC();
-
+    const example_exe = b.addExecutable(.{
+        .name = "blaze_zig_example",
+        .root_module = example_mod,
+    });
     b.installArtifact(example_exe);
 
     // Run command
@@ -85,17 +73,21 @@ pub fn build(b: *std.Build) void {
     run_step.dependOn(&run_cmd.step);
 
     // Tests
-    const tests = b.addTest(.{
+    const test_mod = b.createModule(.{
         .root_source_file = b.path("src/blaze.zig"),
         .target = target,
         .optimize = optimize,
+        .link_libc = true,
     });
-    tests.addIncludePath(.{ .cwd_relative = mkl_include });
-    tests.addLibraryPath(.{ .cwd_relative = mkl_lib });
-    tests.linkSystemLibrary("mkl_intel_lp64");
-    tests.linkSystemLibrary("mkl_sequential");
-    tests.linkSystemLibrary("mkl_core");
-    tests.linkLibC();
+    test_mod.addIncludePath(.{ .cwd_relative = mkl_include });
+    test_mod.addLibraryPath(.{ .cwd_relative = mkl_lib });
+    test_mod.linkSystemLibrary("mkl_intel_lp64", .{});
+    test_mod.linkSystemLibrary("mkl_sequential", .{});
+    test_mod.linkSystemLibrary("mkl_core", .{});
+
+    const tests = b.addTest(.{
+        .root_module = test_mod,
+    });
 
     const test_step = b.step("test", "Run unit tests");
     test_step.dependOn(&b.addRunArtifact(tests).step);
